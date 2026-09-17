@@ -15,8 +15,18 @@ export async function handleAdmin(request, env) {
   const path = url.pathname.replace(/^\/api\/admin/, '') || '/';
   const method = request.method.toUpperCase();
 
+  /* ============ PUBLIC (no auth) ============ */
+
+  // नया endpoint — frontend को बताता है कि setup चाहिए या login
+  if (path === '/setup-status' && method === 'GET') {
+    const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM admins').first();
+    return json({ needsSetup: (row?.n || 0) === 0 });
+  }
+
   if (path === '/setup' && method === 'POST') return setup(request, env);
   if (path === '/login' && method === 'POST') return login(request, env);
+
+  /* ============ AUTH REQUIRED ============ */
 
   if (path === '/logout' && method === 'POST') {
     return json({ ok: true }, { headers: { 'set-cookie': clearCookie(isHttps(request)) } });
@@ -82,6 +92,8 @@ export async function handleAdmin(request, env) {
   return fail('Not found', 404);
 }
 
+/* ===================== setup / login ===================== */
+
 async function setup(request, env) {
   const countRow = await env.DB.prepare('SELECT COUNT(*) AS n FROM admins').first();
   if ((countRow?.n || 0) > 0) return fail('Admin account already exists.', 403);
@@ -114,6 +126,7 @@ async function login(request, env) {
     .prepare('SELECT * FROM admins WHERE username = ? OR email = ?')
     .bind(username, username).first();
 
+  // Constant-time-ish: पहले hash चलाओ चाहे admin mile या न मिले
   const salt = admin?.password_salt || b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
   const expected = admin?.password_hash || b64urlEncode(new Uint8Array(32));
   const ok = await verifyPassword(password, salt, expected);
@@ -148,6 +161,8 @@ async function changePassword(request, env, admin) {
   return json({ ok: true });
 }
 
+/* ===================== dashboard ===================== */
+
 async function stats(env) {
   const [posts, published, drafts, views, categories, trending, recent] = await env.DB.batch([
     env.DB.prepare('SELECT COUNT(*) AS n FROM posts'),
@@ -174,6 +189,8 @@ async function stats(env) {
     recent: recent.results || [],
   });
 }
+
+/* ===================== upload ===================== */
 
 async function upload(request, env) {
   const maxBytes = intOr(env.MAX_UPLOAD_BYTES, 350000);
@@ -203,6 +220,8 @@ async function upload(request, env) {
   return json({ url: `/api/uploads/${id}`, id, size: buffer.length });
 }
 
+/* ===================== settings ===================== */
+
 async function getSettings(env) {
   const { results } = await env.DB.prepare('SELECT key, value FROM settings').all();
   return json({ settings: Object.fromEntries((results || []).map((r) => [r.key, r.value])) });
@@ -220,6 +239,8 @@ async function saveSettings(request, env) {
   await env.DB.batch(statements);
   return json({ ok: true });
 }
+
+/* ===================== categories ===================== */
 
 async function saveCategory(request, env, id) {
   const body = await request.json().catch(() => ({}));
@@ -248,6 +269,8 @@ async function deleteCategory(env, id) {
   return json({ ok: true });
 }
 
+/* ===================== tags ===================== */
+
 async function saveTag(request, env, id) {
   const body = await request.json().catch(() => ({}));
   const name = safeString(body.name, 60).trim();
@@ -271,6 +294,8 @@ async function deleteTag(env, id) {
   await env.DB.prepare('DELETE FROM tags WHERE id = ?').bind(id).run();
   return json({ ok: true });
 }
+
+/* ===================== posts ===================== */
 
 async function listAdminPosts(request, env) {
   const url = new URL(request.url);
