@@ -16,8 +16,30 @@ export default {
       if (pathname === '/sitemap.xml') return await sitemap(request, env);
       if (pathname === '/robots.txt') return await robots(request, env);
 
-      // ---- Everything else → SPA shell (React Router handles routing) ----
-      return env.ASSETS.fetch(request);
+      // ---- Everything else → Assets ----
+      const response = await env.ASSETS.fetch(request);
+
+      // Make a mutable copy so we can set our own cache headers
+      const headers = new Headers(response.headers);
+
+      // Hashed assets (e.g. /assets/index-ABC123.js) → immutable, 1 year
+      // This works because the hash changes whenever the file changes.
+      if (pathname.startsWith('/assets/')) {
+        headers.set('cache-control', 'public, max-age=31536000, immutable');
+      } else {
+        // Everything else (HTML shell, SPA fallback, etc.) → never cache.
+        // Forces browser to fetch fresh HTML on every navigation, which
+        // always references the correct hashed assets.
+        headers.set('cache-control', 'no-cache, no-store, must-revalidate');
+        headers.set('pragma', 'no-cache');
+        headers.set('expires', '0');
+      }
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
     } catch (err) {
       console.error('Worker error:', err && err.stack ? err.stack : err);
       if (pathname.startsWith('/api/')) return fail('Internal server error', 500);
