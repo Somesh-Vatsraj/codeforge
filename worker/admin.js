@@ -483,4 +483,42 @@ async function persistRelations(env, postId, body) {
     const name = safeString(file.file_name, 200).trim();
     if (!name) return;
     statements.push(
-      env.DB.prepare
+      env.DB.prepare(
+        `INSERT INTO post_files (post_id, file_name, file_path, language, code_content, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        postId, name,
+        safeString(file.file_path, 400) || name,
+        safeString(file.language, 40) || 'text',
+        safeString(file.code_content, 400000),
+        index,
+      ),
+    );
+  });
+
+  // ---- demo files ----
+  statements.push(env.DB.prepare('DELETE FROM post_demo_files WHERE post_id = ?').bind(postId));
+  const demoFiles = Array.isArray(body.demo_files) ? body.demo_files : [];
+  demoFiles.forEach((file, index) => {
+    const filePath = safeString(file.file_path, 400).trim();
+    if (!filePath) return;
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO post_demo_files (post_id, file_path, file_content, file_type, sort_order)
+         VALUES (?, ?, ?, ?, ?)`,
+      ).bind(
+        postId, filePath,
+        safeString(file.file_content, 400000),
+        safeString(file.file_type, 80) || 'text/html',
+        index,
+      ),
+    );
+  });
+
+  await env.DB.batch(statements);
+}
+
+async function deletePost(env, id) {
+  await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
