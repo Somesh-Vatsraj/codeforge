@@ -2,46 +2,30 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../store.jsx';
+import Spinner from '../components/Spinner.jsx';
 
 export default function Login() {
-  const { admin, loading, login, refresh } = useAuth();
+  const { admin, loading, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [needsSetup, setNeedsSetup] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(null); // null = unknown
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    api.post('/admin/setup', {})
-      .then(() => {})
-      .catch((err) => {
-        // 403 => an admin already exists, so show the normal login form.
-        setNeedsSetup(err.status === 404 || err.status === 400 ? true : false);
-      })
-      .finally(() => setChecking(false));
-  }, []);
-
-  // Simpler, more reliable probe: try to log in; if no admin exists the API
-  // returns a specific message. We instead probe by reading the response of setup.
+  // Proper probe — dedicated GET endpoint, no side effects
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/admin/me', { credentials: 'same-origin' })
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        // If the API answered without error, an admin session mechanism exists.
-        // We still need to know if ANY admin row exists — do that via a HEAD-ish check.
-      })
-      .catch(() => {});
+    api.get('/admin/setup-status')
+      .then((data) => { if (!cancelled) setNeedsSetup(!!data.needsSetup); })
+      .catch(() => { if (!cancelled) setNeedsSetup(false); });
     return () => { cancelled = true; };
   }, []);
 
-  if (loading || checking) {
-    return <div className="admin-boot"><p className="muted">Loading…</p></div>;
+  if (loading || needsSetup === null) {
+    return <div className="admin-boot"><Spinner label="Loading…" /></div>;
   }
 
   if (admin) {
@@ -51,6 +35,7 @@ export default function Login() {
   const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
+    setNotice('');
     setSubmitting(true);
     try {
       await login(form.username.trim(), form.password);
@@ -65,6 +50,7 @@ export default function Login() {
   const handleSetup = async (event) => {
     event.preventDefault();
     setError('');
+    setNotice('');
     if (form.password.length < 10) { setError('Password must be at least 10 characters.'); return; }
     if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
 
@@ -106,9 +92,7 @@ export default function Login() {
                 type="text"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
-                required
-                minLength={3}
-                autoComplete="username"
+                required minLength={3} autoComplete="username"
               />
             </label>
             <label>
@@ -126,9 +110,7 @@ export default function Login() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                minLength={10}
-                autoComplete="new-password"
+                required minLength={10} autoComplete="new-password"
               />
             </label>
             <label>
@@ -137,9 +119,7 @@ export default function Login() {
                 type="password"
                 value={form.confirm}
                 onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-                required
-                minLength={10}
-                autoComplete="new-password"
+                required minLength={10} autoComplete="new-password"
               />
             </label>
             <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
@@ -154,9 +134,7 @@ export default function Login() {
                 type="text"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
-                required
-                autoComplete="username"
-                autoFocus
+                required autoComplete="username" autoFocus
               />
             </label>
             <label>
@@ -165,8 +143,7 @@ export default function Login() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                autoComplete="current-password"
+                required autoComplete="current-password"
               />
             </label>
             <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
