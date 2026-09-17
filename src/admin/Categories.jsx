@@ -72,4 +72,93 @@ export default function Categories() {
   };
 
   return (
-    <div
+    <div className="admin-page">
+      <header className="admin-page__head">
+        <h1>Categories &amp; Tags</h1>
+      </header>
+
+      {error && <p className="alert alert--error">{error}</p>}
+      {loading && <Spinner label="Loading…" />}
+
+      {!loading && (
+        <div className="two-col">
+          <section className="admin-panel">
+            <h2>Categories ({categories.length})</h2>
+
+            <form className="form" onSubmit={addCategory}>
+              <label>
+                Name
+                <input
+                  type="text"
+                  value={catForm.name}
+                  onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+                  placeholder="e.g. React"
+                  required
+                />
+              </label>
+              <label>
+                Description <span className="muted small">(optional)</span>
+                <input
+                  type="text"
+                  value={catForm.description}
+                  onChange={(e) => setCatForm({ ...catForm, description: e.target.value })}
+                />
+              </label>
+              <button type="submit" className="btn btn--primary btn--sm">+ Add Category</button>
+            </form>
+
+            <ul className="manage-list">
+              {categories.map((category) => (
+                <li key={category.id}>
+                  <div>
+                    <strong>{category.name}</strong>
+                    <span className="muted small block">/{category.slug} · {category.post_count} posts</span>
+                  </div>
+                  <div className="row-actions">
+                    <button type="button" className="btn btn--xs" onClick={() => renameCategory(category)}>Rename</button>
+                    <button type="button" className="btn btn--xs btn--danger" onClick={() => removeCategory(category)}>Delete</button>
+                  </div>
+                </li>
+              ))}
+              {categories.length === 0 && <li className="muted">No categories yet.</li>}
+            </ul>
+          </section>
+
+          <section className="admin-panel">
+            <h2>Tags ({tags.length})</h2>
+
+            <form className="form" onSubmit={addTag}>
+              <label>
+                Name
+                <input
+                  type="text"
+                  value={tagForm.name}
+                  onChange={(e) => setTagForm({ name: e.target.value })}
+                  placeholder="e.g. Responsive Design"
+                  required
+                />
+              </label>
+              <button type="submit" className="btn btn--primary btn--sm">+ Add Tag</button>
+            </form>
+
+            <ul className="manage-list">
+              {tags.map((tag) => (
+                <li key={tag.id}>
+                  <div>
+                    <strong>#{tag.name}</strong>
+                    <span className="muted small block">/{tag.slug} · {tag.post_count} posts</span>
+                  </div>
+                  <div className="row-actions">
+                    <button type="button" className="btn btn--xs" onClick={() => renameTag(tag)}>Rename</button>
+                    <button type="button" className="btn btn--xs btn--danger" onClick={() => removeTag(tag)}>Delete</button>
+                  </div>
+                </li>
+              ))}
+              {tags.length === 0 && <li className="muted">No tags yet.</li>}
+            </ul>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
