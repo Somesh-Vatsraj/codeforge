@@ -3,24 +3,20 @@ import {
   safeString, uid, isHttps,
 } from './util.js';
 import {
-  hashPassword, verifyPassword, createToken, getAdmin, requireAdmin,
+  hashPassword, verifyPassword, createToken, requireAdmin,
   sessionCookie, clearCookie, SESSION_TTL, b64urlEncode,
 } from './auth.js';
 import { sanitizeArticle } from './sanitize.js';
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
-export async function handleAdmin(request, env, ctx) {
+export async function handleAdmin(request, env) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/admin/, '') || '/';
   const method = request.method.toUpperCase();
 
-  /* ================= AUTH (public) ================= */
-
   if (path === '/setup' && method === 'POST') return setup(request, env);
   if (path === '/login' && method === 'POST') return login(request, env);
-
-  /* ================= everything below requires auth ================= */
 
   if (path === '/logout' && method === 'POST') {
     return json({ ok: true }, { headers: { 'set-cookie': clearCookie(isHttps(request)) } });
@@ -32,18 +28,9 @@ export async function handleAdmin(request, env, ctx) {
   if (path === '/me' && method === 'GET') {
     return json({ admin: { id: admin.id, username: admin.username, email: admin.email } });
   }
-
-  if (path === '/password' && method === 'POST') {
-    return changePassword(request, env, admin);
-  }
-
-  if (path === '/stats' && method === 'GET') {
-    return stats(env);
-  }
-
-  if (path === '/upload' && method === 'POST') {
-    return upload(request, env);
-  }
+  if (path === '/password' && method === 'POST') return changePassword(request, env, admin);
+  if (path === '/stats' && method === 'GET') return stats(env);
+  if (path === '/upload' && method === 'POST') return upload(request, env);
 
   if (path === '/settings') {
     if (method === 'GET') return getSettings(env);
@@ -51,7 +38,6 @@ export async function handleAdmin(request, env, ctx) {
     return fail('Method not allowed', 405);
   }
 
-  /* ---- categories ---- */
   if (path === '/categories' && method === 'GET') {
     const { results } = await env.DB.prepare(
       `SELECT c.*, (SELECT COUNT(*) FROM posts p WHERE p.category_id = c.id) AS post_count
@@ -67,7 +53,6 @@ export async function handleAdmin(request, env, ctx) {
     if (method === 'DELETE') return deleteCategory(env, id);
   }
 
-  /* ---- tags ---- */
   if (path === '/tags' && method === 'GET') {
     const { results } = await env.DB.prepare(
       `SELECT t.*, (SELECT COUNT(*) FROM post_tags pt WHERE pt.tag_id = t.id) AS post_count
@@ -83,7 +68,6 @@ export async function handleAdmin(request, env, ctx) {
     if (method === 'DELETE') return deleteTag(env, id);
   }
 
-  /* ---- posts ---- */
   if (path === '/posts' && method === 'GET') return listAdminPosts(request, env);
   if (path === '/posts' && method === 'POST') return savePost(request, env, null);
 
@@ -97,8 +81,6 @@ export async function handleAdmin(request, env, ctx) {
 
   return fail('Not found', 404);
 }
-
-/* ===================== auth handlers ===================== */
 
 async function setup(request, env) {
   const countRow = await env.DB.prepare('SELECT COUNT(*) AS n FROM admins').first();
@@ -115,8 +97,7 @@ async function setup(request, env) {
   const { hash, salt } = await hashPassword(password);
   await env.DB
     .prepare('INSERT INTO admins (username, email, password_hash, password_salt) VALUES (?, ?, ?, ?)')
-    .bind(username, email, hash, salt)
-    .run();
+    .bind(username, email, hash, salt).run();
 
   return json({ ok: true, message: 'Admin account created. You can now sign in.' });
 }
@@ -131,10 +112,8 @@ async function login(request, env) {
 
   const admin = await env.DB
     .prepare('SELECT * FROM admins WHERE username = ? OR email = ?')
-    .bind(username, username)
-    .first();
+    .bind(username, username).first();
 
-  // Always run a hash to keep timing roughly constant.
   const salt = admin?.password_salt || b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
   const expected = admin?.password_hash || b64urlEncode(new Uint8Array(32));
   const ok = await verifyPassword(password, salt, expected);
@@ -164,13 +143,10 @@ async function changePassword(request, env, admin) {
   const { hash, salt } = await hashPassword(next);
   await env.DB
     .prepare("UPDATE admins SET password_hash = ?, password_salt = ?, updated_at = datetime('now') WHERE id = ?")
-    .bind(hash, salt, admin.id)
-    .run();
+    .bind(hash, salt, admin.id).run();
 
   return json({ ok: true });
 }
-
-/* ===================== dashboard ===================== */
 
 async function stats(env) {
   const [posts, published, drafts, views, categories, trending, recent] = await env.DB.batch([
@@ -199,8 +175,6 @@ async function stats(env) {
   });
 }
 
-/* ===================== uploads ===================== */
-
 async function upload(request, env) {
   const maxBytes = intOr(env.MAX_UPLOAD_BYTES, 350000);
   const form = await request.formData().catch(() => null);
@@ -208,11 +182,9 @@ async function upload(request, env) {
 
   const file = form.get('file');
   if (!file || typeof file === 'string') return fail('No file provided.');
-  if (!IMAGE_TYPES.includes(file.type)) {
-    return fail('Only PNG, JPEG, WEBP and GIF images are allowed.');
-  }
+  if (!IMAGE_TYPES.includes(file.type)) return fail('Only PNG, JPEG, WEBP and GIF images are allowed.');
   if (file.size > maxBytes) {
-    return fail(`Image is too large. Maximum is ${Math.round(maxBytes / 1024)} KB. Use an image URL instead for larger files.`);
+    return fail(`Image is too large. Maximum is ${Math.round(maxBytes / 1024)} KB.`);
   }
 
   const buffer = new Uint8Array(await file.arrayBuffer());
@@ -226,13 +198,10 @@ async function upload(request, env) {
   const id = uid();
   await env.DB
     .prepare('INSERT INTO uploads (id, mime_type, byte_size, data) VALUES (?, ?, ?, ?)')
-    .bind(id, file.type, buffer.length, base64)
-    .run();
+    .bind(id, file.type, buffer.length, base64).run();
 
   return json({ url: `/api/uploads/${id}`, id, size: buffer.length });
 }
-
-/* ===================== settings ===================== */
 
 async function getSettings(env) {
   const { results } = await env.DB.prepare('SELECT key, value FROM settings').all();
@@ -252,8 +221,6 @@ async function saveSettings(request, env) {
   return json({ ok: true });
 }
 
-/* ===================== categories ===================== */
-
 async function saveCategory(request, env, id) {
   const body = await request.json().catch(() => ({}));
   const name = safeString(body.name, 80).trim();
@@ -263,15 +230,11 @@ async function saveCategory(request, env, id) {
 
   try {
     if (id) {
-      await env.DB
-        .prepare('UPDATE categories SET name = ?, slug = ?, description = ? WHERE id = ?')
-        .bind(name, slug, description, id)
-        .run();
+      await env.DB.prepare('UPDATE categories SET name = ?, slug = ?, description = ? WHERE id = ?')
+        .bind(name, slug, description, id).run();
     } else {
-      await env.DB
-        .prepare('INSERT INTO categories (name, slug, description) VALUES (?, ?, ?)')
-        .bind(name, slug, description)
-        .run();
+      await env.DB.prepare('INSERT INTO categories (name, slug, description) VALUES (?, ?, ?)')
+        .bind(name, slug, description).run();
     }
   } catch (e) {
     if (String(e.message).includes('UNIQUE')) return fail('A category with that name or slug already exists.');
@@ -284,8 +247,6 @@ async function deleteCategory(env, id) {
   await env.DB.prepare('DELETE FROM categories WHERE id = ?').bind(id).run();
   return json({ ok: true });
 }
-
-/* ===================== tags ===================== */
 
 async function saveTag(request, env, id) {
   const body = await request.json().catch(() => ({}));
@@ -311,8 +272,6 @@ async function deleteTag(env, id) {
   return json({ ok: true });
 }
 
-/* ===================== posts ===================== */
-
 async function listAdminPosts(request, env) {
   const url = new URL(request.url);
   const page = clamp(intOr(url.searchParams.get('page'), 1), 1, 500);
@@ -323,14 +282,8 @@ async function listAdminPosts(request, env) {
 
   const where = ['1=1'];
   const binds = [];
-  if (status === 'published' || status === 'draft') {
-    where.push('p.status = ?');
-    binds.push(status);
-  }
-  if (q) {
-    where.push('(p.title LIKE ? OR p.slug LIKE ?)');
-    binds.push(`%${q}%`, `%${q}%`);
-  }
+  if (status === 'published' || status === 'draft') { where.push('p.status = ?'); binds.push(status); }
+  if (q) { where.push('(p.title LIKE ? OR p.slug LIKE ?)'); binds.push(`%${q}%`, `%${q}%`); }
   const whereSql = where.join(' AND ');
 
   const countRow = await env.DB
@@ -361,6 +314,13 @@ async function getAdminPost(env, id) {
     env.DB.prepare('SELECT * FROM post_demo_files WHERE post_id = ? ORDER BY sort_order, id').bind(id),
   ]);
 
+  const safeArray = (value) => {
+    try {
+      const parsed = JSON.parse(value || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  };
+
   return json({
     post: {
       ...post,
@@ -372,15 +332,6 @@ async function getAdminPost(env, id) {
       demo_files: demoRes.results || [],
     },
   });
-}
-
-function safeArray(value) {
-  try {
-    const parsed = JSON.parse(value || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 async function savePost(request, env, id) {
@@ -447,14 +398,12 @@ async function savePost(request, env, id) {
   }
 
   await persistRelations(env, postId, body);
-
   return json({ ok: true, id: postId, slug });
 }
 
 async function persistRelations(env, postId, body) {
   const statements = [];
 
-  // ---- tags ----
   statements.push(env.DB.prepare('DELETE FROM post_tags WHERE post_id = ?').bind(postId));
   const tagIds = Array.isArray(body.tag_ids) ? body.tag_ids.map((t) => intOr(t, 0)).filter(Boolean) : [];
   for (const tagId of [...new Set(tagIds)]) {
@@ -463,7 +412,6 @@ async function persistRelations(env, postId, body) {
     );
   }
 
-  // ---- images ----
   statements.push(env.DB.prepare('DELETE FROM post_images WHERE post_id = ?').bind(postId));
   const images = Array.isArray(body.images) ? body.images : [];
   images.forEach((img, index) => {
@@ -476,7 +424,6 @@ async function persistRelations(env, postId, body) {
     );
   });
 
-  // ---- source files ----
   statements.push(env.DB.prepare('DELETE FROM post_files WHERE post_id = ?').bind(postId));
   const files = Array.isArray(body.files) ? body.files : [];
   files.forEach((file, index) => {
@@ -496,7 +443,6 @@ async function persistRelations(env, postId, body) {
     );
   });
 
-  // ---- demo files ----
   statements.push(env.DB.prepare('DELETE FROM post_demo_files WHERE post_id = ?').bind(postId));
   const demoFiles = Array.isArray(body.demo_files) ? body.demo_files : [];
   demoFiles.forEach((file, index) => {
