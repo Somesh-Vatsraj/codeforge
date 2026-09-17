@@ -1,19 +1,32 @@
+# ============================================================
+# Cloudflare Worker configuration for CodeForge
+# ============================================================
 name = "codeforge"
 main = "worker/index.js"
 compatibility_date = "2024-11-06"
 compatibility_flags = ["nodejs_compat"]
 
+# ============================================================
+# Static assets (Vite build output goes to ./dist)
+# ============================================================
 [assets]
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = true
 
+# ============================================================
+# D1 database binding
+# ============================================================
 [[d1_databases]]
 binding = "DB"
 database_name = "codeforge_db"
 database_id = "7c858d03-a2c4-4d1e-b301-50e7226f27a4"
 
+# ============================================================
+# Non-sensitive environment variables
+# ⚠️ NEVER put SESSION_SECRET here — use Cloudflare Secrets instead
+# ============================================================
 [vars]
 SITE_URL = "https://codeforge.someshsoftwareengineer-233.workers.dev"
 MAX_UPLOAD_BYTES = "350000"
