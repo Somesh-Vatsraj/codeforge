@@ -1,7 +1,6 @@
 import { handlePublic } from './public.js';
 import { handleAdmin } from './admin.js';
 import { fail } from './util.js';
-import { escapeHtml } from './sanitize.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -9,16 +8,15 @@ export default {
     const { pathname } = url;
 
     try {
+      // ---- API routes ----
       if (pathname.startsWith('/api/admin')) return await handleAdmin(request, env);
       if (pathname.startsWith('/api/')) return await handlePublic(request, env);
 
+      // ---- Generated files ----
       if (pathname === '/sitemap.xml') return await sitemap(request, env);
       if (pathname === '/robots.txt') return await robots(request, env);
 
-      if (pathname.startsWith('/project/')) {
-        return await renderPostShell(request, env, decodeURIComponent(pathname.slice('/project/'.length)));
-      }
-
+      // ---- Everything else → SPA shell (React Router handles routing) ----
       return env.ASSETS.fetch(request);
     } catch (err) {
       console.error('Worker error:', err && err.stack ? err.stack : err);
@@ -89,71 +87,4 @@ ${urls.join('\n')}
   return new Response(xml, {
     headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=1800' },
   });
-}
-
-async function renderPostShell(request, env, slug) {
-  const indexResponse = await env.ASSETS.fetch(new URL('/', request.url));
-  if (!indexResponse.ok) return indexResponse;
-
-  const post = await env.DB
-    .prepare(`SELECT p.title, p.description, p.thumbnail_url, p.seo_title, p.seo_description,
-                     p.canonical_url, p.published_at, p.updated_at, p.author, p.views,
-                     c.name AS category_name
-              FROM posts p LEFT JOIN categories c ON c.id = p.category_id
-              WHERE p.slug = ? AND p.status = 'published'`)
-    .bind(slug).first();
-
-  if (!post) return indexResponse;
-
-  const origin = new URL(request.url).origin;
-  const canonical = post.canonical_url || `${origin}/project/${slug}`;
-  const title = post.seo_title || post.title;
-  const description = post.seo_description || post.description || '';
-  const image = absolutize(post.thumbnail_url, origin) || `${origin}/favicon.svg`;
-
-  const ld = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: title,
-    description,
-    image: [image],
-    datePublished: post.published_at || post.updated_at,
-    dateModified: post.updated_at,
-    author: { '@type': 'Organization', name: post.author || 'Editorial Team' },
-    publisher: { '@type': 'Organization', name: 'CodeForge' },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
-    articleSection: post.category_name || undefined,
-  };
-
-  const ldJson = JSON.stringify(ld).replace(/</g, '\\u003c');
-
-  const transformed = new HTMLRewriter()
-    .on('title', { element(el) { el.setInnerContent(escapeHtml(title)); } })
-    .on('meta[name="description"]', { element(el) { el.setAttribute('content', description); } })
-    .on('link[rel="canonical"]', { element(el) { el.setAttribute('href', canonical); } })
-    .on('meta[property="og:title"]', { element(el) { el.setAttribute('content', title); } })
-    .on('meta[property="og:description"]', { element(el) { el.setAttribute('content', description); } })
-    .on('meta[property="og:image"]', { element(el) { el.setAttribute('content', image); } })
-    .on('meta[property="og:url"]', { element(el) { el.setAttribute('content', canonical); } })
-    .on('meta[property="og:type"]', { element(el) { el.setAttribute('content', 'article'); } })
-    .on('meta[name="twitter:title"]', { element(el) { el.setAttribute('content', title); } })
-    .on('meta[name="twitter:description"]', { element(el) { el.setAttribute('content', description); } })
-    .on('meta[name="twitter:image"]', { element(el) { el.setAttribute('content', image); } })
-    .on('script#ld-json', { element(el) { el.setInnerContent(ldJson, { html: true }); } })
-    .transform(indexResponse);
-
-  const body = await transformed.text();
-  return new Response(body, {
-    headers: {
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'public, max-age=300',
-    },
-  });
-}
-
-function absolutize(url, origin) {
-  if (!url) return '';
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith('/')) return origin + url;
-  return '';
 }
