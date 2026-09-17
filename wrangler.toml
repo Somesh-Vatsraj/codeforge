@@ -1,0 +1,25 @@
+name = "codeforge"
+main = "worker/index.js"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+
+# ---- Static assets (Vite build output) ----
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/project/*", "/sitemap.xml", "/robots.txt"]
+
+# ---- D1 database ----
+[[d1_databases]]
+binding = "DB"
+database_name = "codeforge_db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[vars]
+SITE_URL = "http://localhost:8787"
+# Optional: max uploaded image size in bytes (D1-safe ceiling)
+MAX_UPLOAD_BYTES = "350000"
+
+# Secrets (set with `wrangler secret put`):
+#   SESSION_SECRET  -> long random string used to sign admin session tokens
