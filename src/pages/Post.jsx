@@ -12,6 +12,20 @@ import Seo from '../components/Seo.jsx';
 import Spinner from '../components/Spinner.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 
+/* Safe array normalizer — handles arrays, JSON strings, and null */
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value ? [value] : [];
+    }
+  }
+  return [];
+}
+
 export default function Post() {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
@@ -79,6 +93,14 @@ export default function Post() {
   const canonical = post.canonical_url || `/project/${post.slug}`;
   const minutes = readingTime(post.article_content);
 
+  // Normalize all array-like fields so a stray JSON string can never crash render
+  const features = asArray(post.features);
+  const technologies = asArray(post.technologies);
+  const tags = asArray(post.tags);
+  const images = asArray(post.images);
+  const files = asArray(post.files);
+  const demoFiles = asArray(post.demo_files);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -90,7 +112,7 @@ export default function Post() {
     author: { '@type': 'Organization', name: post.author || 'Editorial Team' },
     mainEntityOfPage: { '@type': 'WebPage', '@id': window.location.origin + canonical },
     articleSection: post.category_name,
-    keywords: post.tags?.map((t) => t.name).join(', '),
+    keywords: tags.map((t) => t.name).join(', '),
   };
 
   return (
@@ -174,14 +196,14 @@ export default function Post() {
         <div className="post-main">
           <div
             className="article-content"
-            dangerouslySetInnerHTML={{ __html: post.article_content }}
+            dangerouslySetInnerHTML={{ __html: post.article_content || '' }}
           />
 
-          {post.images?.length > 0 && (
+          {images.length > 0 && (
             <section className="article-gallery">
               <h2>Project images</h2>
               <div className="article-gallery__grid">
-                {post.images.map((img) => (
+                {images.map((img) => (
                   <figure key={img.id}>
                     <img src={img.image_url} alt={img.alt_text || ''} loading="lazy" decoding="async" />
                     {img.caption && <figcaption>{img.caption}</figcaption>}
@@ -191,20 +213,20 @@ export default function Post() {
             </section>
           )}
 
-          {post.features?.length > 0 && (
+          {features.length > 0 && (
             <section className="project-section">
               <h2>Project Features</h2>
               <ul className="feature-list">
-                {post.features.map((feature, i) => <li key={i}>{feature}</li>)}
+                {features.map((feature, i) => <li key={i}>{feature}</li>)}
               </ul>
             </section>
           )}
 
-          {post.technologies?.length > 0 && (
+          {technologies.length > 0 && (
             <section className="project-section">
               <h2>Technologies Used</h2>
               <ul className="tech-list">
-                {post.technologies.map((tech) => <li key={tech} className="chip chip--tech">{tech}</li>)}
+                {technologies.map((tech) => <li key={tech} className="chip chip--tech">{tech}</li>)}
               </ul>
             </section>
           )}
@@ -257,7 +279,7 @@ export default function Post() {
             </section>
           )}
 
-          {post.files?.length > 0 && (
+          {files.length > 0 && (
             <section className="project-section" id="source-code">
               <div className="section__head">
                 <h2>Source Code</h2>
@@ -266,11 +288,11 @@ export default function Post() {
                 </button>
               </div>
               <p className="muted small">
-                {post.files.length} file{post.files.length === 1 ? '' : 's'} included. Use the copy
+                {files.length} file{files.length === 1 ? '' : 's'} included. Use the copy
                 button on any block, or download the whole project as a ZIP.
               </p>
               <div className="code-stack">
-                {post.files.map((file) => (
+                {files.map((file) => (
                   <CodeBlock
                     key={file.id}
                     fileName={file.file_name}
@@ -283,11 +305,11 @@ export default function Post() {
             </section>
           )}
 
-          {post.tags?.length > 0 && (
+          {tags.length > 0 && (
             <section className="project-section">
               <h2>Tags</h2>
               <ul className="tag-list">
-                {post.tags.map((tag) => (
+                {tags.map((tag) => (
                   <li key={tag.id}><Link to={`/tag/${tag.slug}`}>#{tag.name}</Link></li>
                 ))}
               </ul>
@@ -335,7 +357,7 @@ export default function Post() {
               <div><dt>Published</dt><dd>{formatDate(post.published_at)}</dd></div>
               <div><dt>Reading time</dt><dd>{minutes} min</dd></div>
               <div><dt>Views</dt><dd>{formatNumber(post.views)}</dd></div>
-              <div><dt>Files</dt><dd>{post.files?.length || 0}</dd></div>
+              <div><dt>Files</dt><dd>{files.length}</dd></div>
             </dl>
           </div>
 
