@@ -1,9 +1,3 @@
-/**
- * Server-side HTML sanitizer built on Cloudflare's HTMLRewriter.
- * Runs on every write to `posts.article_content`.
- * Whitelist approach: unknown tags are unwrapped, dangerous tags removed.
- */
-
 const ALLOWED_TAGS = new Set([
   'p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'strong', 'b', 'em', 'i', 'u', 's', 'mark', 'del', 'ins', 'sub', 'sup',
@@ -58,8 +52,6 @@ function isSafeUrl(value, forIframe) {
 
 function readAttributes(el) {
   const out = [];
-  // Cloudflare's HTMLRewriter exposes `attributes` as an iterator of [name, value].
-  // Older/typed builds expose objects with { name, value } — handle both.
   for (const attr of el.attributes) {
     if (Array.isArray(attr)) out.push([attr[0], attr[1]]);
     else if (attr && typeof attr === 'object') out.push([attr.name, attr.value]);
@@ -74,9 +66,7 @@ export async function sanitizeArticle(html) {
 
   for (const tag of DROP_TAGS) {
     rewriter = rewriter.on(tag, {
-      element(el) {
-        el.remove();
-      },
+      element(el) { el.remove(); },
     });
   }
 
