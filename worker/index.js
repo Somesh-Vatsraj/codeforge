@@ -9,8 +9,8 @@ export default {
     const { pathname } = url;
 
     try {
-      if (pathname.startsWith('/api/admin')) return await handleAdmin(request, env, ctx);
-      if (pathname.startsWith('/api/')) return await handlePublic(request, env, ctx);
+      if (pathname.startsWith('/api/admin')) return await handleAdmin(request, env);
+      if (pathname.startsWith('/api/')) return await handlePublic(request, env);
 
       if (pathname === '/sitemap.xml') return await sitemap(request, env);
       if (pathname === '/robots.txt') return await robots(request, env);
@@ -28,8 +28,6 @@ export default {
   },
 };
 
-/* ---------- dynamic robots.txt ---------- */
-
 async function robots(request, env) {
   const origin = new URL(request.url).origin;
   const body = `User-agent: *
@@ -43,8 +41,6 @@ Sitemap: ${origin}/sitemap.xml
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
   });
 }
-
-/* ---------- dynamic sitemap.xml (published posts only) ---------- */
 
 async function sitemap(request, env) {
   const origin = new URL(request.url).origin;
@@ -71,7 +67,6 @@ async function sitemap(request, env) {
   ];
 
   const urls = [];
-
   for (const page of staticPages) {
     urls.push(`  <url><loc>${origin}${page.loc}</loc><priority>${page.priority}</priority></url>`);
   }
@@ -96,8 +91,6 @@ ${urls.join('\n')}
   });
 }
 
-/* ---------- server-side meta injection for post pages ---------- */
-
 async function renderPostShell(request, env, slug) {
   const indexResponse = await env.ASSETS.fetch(new URL('/', request.url));
   if (!indexResponse.ok) return indexResponse;
@@ -108,17 +101,13 @@ async function renderPostShell(request, env, slug) {
                      c.name AS category_name
               FROM posts p LEFT JOIN categories c ON c.id = p.category_id
               WHERE p.slug = ? AND p.status = 'published'`)
-    .bind(slug)
-    .first();
+    .bind(slug).first();
 
-  if (!post) {
-    // Unknown slug → let the SPA render its 404 page.
-    return indexResponse;
-  }
+  if (!post) return indexResponse;
 
   const origin = new URL(request.url).origin;
   const canonical = post.canonical_url || `${origin}/project/${slug}`;
-  const title = post.seo_title || `${post.title}`;
+  const title = post.seo_title || post.title;
   const description = post.seo_description || post.description || '';
   const image = absolutize(post.thumbnail_url, origin) || `${origin}/favicon.svg`;
 
