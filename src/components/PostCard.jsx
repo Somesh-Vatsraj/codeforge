@@ -1,17 +1,47 @@
 import { Link } from 'react-router-dom';
 import { formatDate, formatNumber } from '../utils/format.js';
 
+/**
+ * Safe array normalizer.
+ * Handles: real arrays, JSON strings, null/undefined.
+ * Prevents the "x.map is not a function" crash if the API ever
+ * returns a serialized string instead of an array.
+ */
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default function PostCard({ post }) {
+  const tags = asArray(post.tags);
+
   return (
     <article className="post-card">
-      <Link className="post-card__media" to={`/project/${post.slug}`} tabIndex={-1} aria-hidden="true">
+      {/*
+        Thumbnail — rendered as a <div>, not a link.
+        Why: the title link below already provides keyboard-accessible
+        navigation to the same URL. Making the thumbnail a second
+        focusable link would duplicate the navigation target and cause
+        the "Blocked aria-hidden on a focused element" warning.
+        A div cannot receive focus, so aria-hidden="true" is valid here
+        and correctly hides the decorative image from screen readers.
+      */}
+      <div className="post-card__media" aria-hidden="true">
         {post.thumbnail_url ? (
           <img src={post.thumbnail_url} alt="" loading="lazy" decoding="async" />
         ) : (
           <span className="post-card__placeholder">{"</>"}</span>
         )}
         {post.featured && <span className="badge badge--featured">Featured</span>}
-      </Link>
+      </div>
 
       <div className="post-card__body">
         {post.category_name && (
@@ -26,9 +56,9 @@ export default function PostCard({ post }) {
 
         <p className="post-card__desc">{post.description}</p>
 
-        {post.tags?.length > 0 && (
+        {tags.length > 0 && (
           <ul className="tag-list tag-list--small">
-            {post.tags.slice(0, 3).map((tag) => (
+            {tags.slice(0, 3).map((tag) => (
               <li key={tag.id}>
                 <Link to={`/tag/${tag.slug}`}>#{tag.name}</Link>
               </li>
