@@ -65,7 +65,6 @@ export async function sha256Hex(text) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** Ensures a slug is unique inside `posts`, appending -2, -3 ... when needed. */
 export async function uniqueSlug(db, base, excludeId = null) {
   let slug = slugify(base);
   let n = 1;
