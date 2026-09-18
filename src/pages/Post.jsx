@@ -46,7 +46,7 @@ export default function Post() {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
-  const [previewMode, setPreviewMode] = useState('desktop'); // 'desktop' | 'mobile'
+  const [previewMode, setPreviewMode] = useState('desktop');
 
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -96,6 +96,13 @@ export default function Post() {
     if (!post) return;
     const blob = buildProjectZip(post);
     downloadBlob(blob, `${slugify(post.slug || post.title) || 'project'}.zip`);
+  };
+
+  const jumpToPreview = () => {
+    setShowPreview(true);
+    setTimeout(() => {
+      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
   };
 
   const submitComment = async (event) => {
@@ -229,29 +236,6 @@ export default function Post() {
                   <img src={post.thumbnail_url} alt={post.title} loading="eager" decoding="async" />
                 </figure>
               )}
-
-              <div className="post-actions">
-                {post.live_preview && previewDoc && (
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={() => {
-                      setShowPreview(true);
-                      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    ▶ Live Preview
-                  </button>
-                )}
-                <button type="button" className="btn btn--ghost" onClick={downloadProject}>
-                  ⬇ Download Project
-                </button>
-                {watchUrl && (
-                  <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
-                    Watch on YouTube
-                  </a>
-                )}
-              </div>
 
               <div
                 className="article-content"
@@ -392,16 +376,29 @@ export default function Post() {
                 </div>
               )}
 
-              <nav className="post-nav" aria-label="Post navigation">
-                <Link to="/blog" className="post-nav__item">
-                  <span className="post-nav__label">Back to</span>
-                  <span className="post-nav__title">All blog posts</span>
-                </Link>
-                <Link to="/trending" className="post-nav__item post-nav__item--next">
-                  <span className="post-nav__label">Next up</span>
-                  <span className="post-nav__title">See trending tutorials</span>
-                </Link>
-              </nav>
+              {/* =============================================
+                  POST ACTIONS — moved to the end of the post
+                  (Live Preview / Download / Watch on YouTube)
+                  ============================================= */}
+              <div className="post-actions post-actions--bottom">
+                {post.live_preview && previewDoc && (
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={jumpToPreview}
+                  >
+                    ▶ Live Preview
+                  </button>
+                )}
+                <button type="button" className="btn btn--ghost" onClick={downloadProject}>
+                  ⬇ Download Project
+                </button>
+                {watchUrl && (
+                  <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
+                    Watch on YouTube
+                  </a>
+                )}
+              </div>
 
               {related.length > 0 && (
                 <section className="related-section">
@@ -427,6 +424,17 @@ export default function Post() {
                   </div>
                 </section>
               )}
+
+              <nav className="post-nav" aria-label="Post navigation">
+                <Link to="/blog" className="post-nav__item">
+                  <span className="post-nav__label">Back to</span>
+                  <span className="post-nav__title">All blog posts</span>
+                </Link>
+                <Link to="/trending" className="post-nav__item post-nav__item--next">
+                  <span className="post-nav__label">Next up</span>
+                  <span className="post-nav__title">See trending tutorials</span>
+                </Link>
+              </nav>
 
               <section className="comment-section">
                 {comments.length > 0 && (
