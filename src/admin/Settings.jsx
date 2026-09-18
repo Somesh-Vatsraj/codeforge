@@ -18,13 +18,17 @@ const GROUPS = [
   },
   {
     title: 'Social links',
+    hint: 'Only fill the links you want to show. Instagram always shows with a fallback if left empty.',
     fields: [
-      ['social_twitter', 'Twitter / X URL', 'url'],
-      ['social_github', 'GitHub URL', 'url'],
-      ['social_youtube', 'YouTube URL', 'url'],
       ['social_facebook', 'Facebook URL', 'url'],
       ['social_instagram', 'Instagram URL', 'url'],
+      ['social_youtube', 'YouTube URL', 'url'],
+      ['social_twitter', 'Twitter / X URL', 'url'],
+      ['social_github', 'GitHub URL', 'url'],
       ['youtube_channel', 'YouTube channel URL', 'url'],
+      ['social_facebook_count', 'Facebook button label', 'text'],
+      ['social_instagram_count', 'Instagram button label', 'text'],
+      ['social_youtube_count', 'YouTube button label', 'text'],
     ],
   },
   {
