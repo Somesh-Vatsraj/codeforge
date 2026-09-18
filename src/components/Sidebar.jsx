@@ -77,7 +77,7 @@ export default function Sidebar({ showFeatured = true }) {
     return () => { cancelled = true; };
   }, []);
 
-  // Only show socials that have a real configured URL
+  // Instagram always visible; others only if configured
   const socials = [
     {
       key: 'facebook',
@@ -90,10 +90,11 @@ export default function Sidebar({ showFeatured = true }) {
     {
       key: 'instagram',
       name: 'Instagram',
-      url: normalizeUrl(settings.social_instagram),
+      url: normalizeUrl(settings.social_instagram) || 'https://www.instagram.com',
       count: settings.social_instagram_count || '30,000 Followers',
       className: 'follow-btn--ig',
       Icon: InstagramIcon,
+      always: true,
     },
     {
       key: 'youtube',
@@ -103,7 +104,7 @@ export default function Sidebar({ showFeatured = true }) {
       className: 'follow-btn--yt',
       Icon: YouTubeIcon,
     },
-  ].filter((s) => s.url);
+  ].filter((s) => s.always || s.url);
 
   return (
     <aside className="sidebar">
@@ -140,10 +141,10 @@ export default function Sidebar({ showFeatured = true }) {
       )}
 
       {/* ==================== Follow Us ==================== */}
-      {/* Widget completely hidden if no socials are configured */}
-      {socials.length > 0 && (
-        <div className="widget">
-          <h3 className="widget__title">Follow Us</h3>
+      <div className="widget">
+        <h3 className="widget__title">Follow Us</h3>
+
+        {socials.length > 0 ? (
           <div
             className="follow-grid"
             style={{ gridTemplateColumns: `repeat(${Math.min(socials.length, 3)}, 1fr)` }}
@@ -163,8 +164,12 @@ export default function Sidebar({ showFeatured = true }) {
               </a>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="muted small">
+            No social links configured yet. Add them in Admin → Settings → Social links.
+          </p>
+        )}
+      </div>
 
       {popular.length > 0 && (
         <div className="widget">
