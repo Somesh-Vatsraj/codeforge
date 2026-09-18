@@ -408,33 +408,31 @@ export default function Post() {
 
               {/* ==================== COMMENTS ==================== */}
               <section className="comment-section">
-                <h3 className="comment-section__title">
-                  {comments.length > 0
-                    ? `${comments.length} ${comments.length === 1 ? 'Comment' : 'Comments'}`
-                    : 'Leave a Reply'}
-                </h3>
-
-                {commentsLoading && <Spinner label="Loading comments…" compact />}
-
-                {!commentsLoading && comments.length > 0 && (
-                  <ol className="comment-list">
-                    {comments.map((c) => (
-                      <li key={c.id} className="comment-item">
-                        <div className="comment-item__avatar" aria-hidden="true">
-                          {(c.author_name || '?').trim().charAt(0).toUpperCase()}
-                        </div>
-                        <div className="comment-item__body">
-                          <div className="comment-item__head">
-                            <strong className="comment-item__name">{c.author_name}</strong>
-                            <time className="comment-item__time" dateTime={c.created_at}>
-                              {timeAgo(c.created_at)}
-                            </time>
+                {comments.length > 0 && (
+                  <>
+                    <h3 className="comment-section__title">
+                      {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+                    </h3>
+                    {commentsLoading && <Spinner label="Loading comments…" compact />}
+                    <ol className="comment-list">
+                      {comments.map((c) => (
+                        <li key={c.id} className="comment-item">
+                          <div className="comment-item__avatar" aria-hidden="true">
+                            {(c.author_name || '?').trim().charAt(0).toUpperCase()}
                           </div>
-                          <p className="comment-item__text">{c.body}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
+                          <div className="comment-item__body">
+                            <div className="comment-item__head">
+                              <strong className="comment-item__name">{c.author_name}</strong>
+                              <time className="comment-item__time" dateTime={c.created_at}>
+                                {timeAgo(c.created_at)}
+                              </time>
+                            </div>
+                            <p className="comment-item__text">{c.body}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
                 )}
 
                 <h3 className="comment-section__title comment-section__title--form">
@@ -488,7 +486,6 @@ export default function Post() {
                     />
                   </div>
 
-                  {/* Honeypot — hidden from real users */}
                   <div className="comment-form__honeypot" aria-hidden="true">
                     <label htmlFor="comment-website">Website</label>
                     <input
