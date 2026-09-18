@@ -219,7 +219,7 @@ export async function handlePublic(request, env) {
     return getPostBySlug(request, env, decodeURIComponent(postMatch[1]));
   }
 
-  /* ---------- post listing ---------- */
+  /* ---------- post listing (with sort=random) ---------- */
   if (path === '/posts') {
     const posts = await listPosts(env, {
       page: url.searchParams.get('page'),
@@ -255,9 +255,11 @@ async function listPosts(env, opts = {}) {
   if (opts.featured === '1' || opts.featured === 'true') where.push('p.featured = 1');
   if (opts.trending === '1' || opts.trending === 'true') where.push('p.trending = 1');
 
+  // ---- SORT options ----
   let order = 'p.published_at DESC, p.id DESC';
   if (opts.sort === 'views') order = 'p.views DESC, p.published_at DESC';
   if (opts.sort === 'oldest') order = 'p.published_at ASC';
+  if (opts.sort === 'random') order = 'RANDOM()';
 
   const whereSql = where.join(' AND ');
 
@@ -309,7 +311,6 @@ async function getPostBySlug(request, env, slug) {
   post.files = filesRes.results || [];
   post.demo_files = post.live_preview ? (demoRes.results || []) : [];
 
-  // ---------- safe view counting ----------
   try {
     const ip = clientIp(request);
     const ua = request.headers.get('user-agent') || '';
