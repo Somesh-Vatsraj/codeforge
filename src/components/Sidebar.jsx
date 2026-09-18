@@ -28,13 +28,9 @@ export default function Sidebar({ showFeatured = true }) {
         setCategories(catData.categories || []);
         setPopular(popularData.posts || []);
       })
-      .catch(() => {
-        /* keep empty states */
-      });
+      .catch(() => {});
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -52,14 +48,9 @@ export default function Sidebar({ showFeatured = true }) {
                   aria-hidden="true"
                 >
                   {post.thumbnail_url ? (
-                    <img src={post.thumbnail_url} alt="" loading="lazy" decoding="async" />
+                    <img src={post.thumbnail_url} alt="" loading="lazy" />
                   ) : (
-                    <span
-                      className="post-card__placeholder"
-                      style={{ fontSize: '1.2rem' }}
-                    >
-                      {"</>"}
-                    </span>
+                    <span className="post-card__placeholder" style={{ fontSize: '1.2rem' }}>{"</>"}</span>
                   )}
                 </Link>
                 <div className="recent-item__body">
@@ -125,14 +116,9 @@ export default function Sidebar({ showFeatured = true }) {
                   aria-hidden="true"
                 >
                   {post.thumbnail_url ? (
-                    <img src={post.thumbnail_url} alt="" loading="lazy" decoding="async" />
+                    <img src={post.thumbnail_url} alt="" loading="lazy" />
                   ) : (
-                    <span
-                      className="post-card__placeholder"
-                      style={{ fontSize: '1.2rem' }}
-                    >
-                      {"</>"}
-                    </span>
+                    <span className="post-card__placeholder" style={{ fontSize: '1.2rem' }}>{"</>"}</span>
                   )}
                 </Link>
                 <div className="recent-item__body">
@@ -155,7 +141,7 @@ export default function Sidebar({ showFeatured = true }) {
           <div className="featured-widget">
             <Link to={`/project/${featured.slug}`} tabIndex={-1} aria-hidden="true">
               {featured.thumbnail_url ? (
-                <img src={featured.thumbnail_url} alt="" loading="lazy" decoding="async" />
+                <img src={featured.thumbnail_url} alt="" loading="lazy" />
               ) : (
                 <div
                   style={{
