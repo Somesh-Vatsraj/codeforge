@@ -22,25 +22,36 @@ export default function Header() {
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const closeMenu = () => setMenuOpen(false);
+
   const submitSearch = (event) => {
     event.preventDefault();
     const q = query.trim();
     if (!q) return;
-    setMenuOpen(false);
+    closeMenu();
     navigate(`/search?q=${encodeURIComponent(q)}`);
     setQuery('');
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+
+  const htmlCssCats = categories.filter((c) => c.slug === 'html' || c.slug === 'css');
+  const jsCats = categories.filter(
+    (c) => c.slug.includes('javascript') || c.slug === 'js' || c.slug === 'react',
+  );
 
   return (
     <>
       {showTopBar && (
         <div className="top-bar">
-          Impressed by our work? Hire us for exceptional web development services on Fiverr.
-          <a href="https://www.fiverr.com/s/zAW3GKK" target="_blank" rel="noopener noreferrer">Hire us on Fiverr</a>
+          <span>Impressed by our work? Hire us for exceptional web development services.</span>
+          <a href="https://www.fiverr.com" target="_blank" rel="noopener noreferrer">Hire us</a>
           <button
             type="button"
             className="top-bar__close"
@@ -54,7 +65,7 @@ export default function Header() {
 
       <header className="site-header">
         <div className="container site-header__inner">
-          <Link className="brand" to="/" onClick={() => setMenuOpen(false)}>
+          <Link className="brand" to="/" onClick={closeMenu}>
             {settings.logo_url ? (
               <img src={settings.logo_url} alt={settings.site_name} className="brand__logo" />
             ) : (
@@ -63,47 +74,64 @@ export default function Header() {
             <span className="brand__name">{settings.site_name}</span>
           </Link>
 
+          {menuOpen && (
+            <div className="nav-backdrop" onClick={closeMenu} aria-hidden="true" />
+          )}
+
           <nav className={`main-nav ${menuOpen ? 'main-nav--open' : ''}`} aria-label="Main navigation">
-            <NavLink to="/" end onClick={() => setMenuOpen(false)}>Home</NavLink>
-            <NavLink to="/latest" onClick={() => setMenuOpen(false)}>Blog</NavLink>
+            <div className="main-nav__head">
+              <span className="main-nav__title">Menu</span>
+              <button
+                type="button"
+                className="main-nav__close"
+                onClick={closeMenu}
+                aria-label="Close menu"
+              >
+                ✕
+              </button>
+            </div>
+
+            <NavLink to="/" end onClick={closeMenu}>Home</NavLink>
+            <NavLink to="/latest" onClick={closeMenu}>Blog</NavLink>
 
             <div className="nav-dropdown">
               <button type="button" className="nav-dropdown__trigger" aria-haspopup="true">
-                HTML &amp; CSS <span aria-hidden="true">▾</span>
+                <span>HTML &amp; CSS</span>
+                <span className="nav-dropdown__chev" aria-hidden="true">▾</span>
               </button>
               <ul className="nav-dropdown__menu">
-                {categories.filter((c) => c.slug === 'html' || c.slug === 'css').map((c) => (
-                  <li key={c.id}>
-                    <Link to={`/category/${c.slug}`} onClick={() => setMenuOpen(false)}>
-                      {c.name}
-                    </Link>
-                  </li>
-                ))}
-                {categories.filter((c) => c.slug === 'html' || c.slug === 'css').length === 0 && (
-                  <li className="nav-dropdown__empty">
-                    <Link to="/latest">All tutorials</Link>
-                  </li>
+                {htmlCssCats.length > 0 ? (
+                  htmlCssCats.map((c) => (
+                    <li key={c.id}>
+                      <Link to={`/category/${c.slug}`} onClick={closeMenu}>{c.name}</Link>
+                    </li>
+                  ))
+                ) : (
+                  <li><Link to="/latest" onClick={closeMenu}>All tutorials</Link></li>
                 )}
               </ul>
             </div>
 
             <div className="nav-dropdown">
               <button type="button" className="nav-dropdown__trigger" aria-haspopup="true">
-                JavaScript <span aria-hidden="true">▾</span>
+                <span>JavaScript</span>
+                <span className="nav-dropdown__chev" aria-hidden="true">▾</span>
               </button>
               <ul className="nav-dropdown__menu">
-                {categories.filter((c) => c.slug.includes('javascript') || c.slug === 'js').map((c) => (
-                  <li key={c.id}>
-                    <Link to={`/category/${c.slug}`} onClick={() => setMenuOpen(false)}>
-                      {c.name}
-                    </Link>
-                  </li>
-                ))}
+                {jsCats.length > 0 ? (
+                  jsCats.map((c) => (
+                    <li key={c.id}>
+                      <Link to={`/category/${c.slug}`} onClick={closeMenu}>{c.name}</Link>
+                    </li>
+                  ))
+                ) : (
+                  <li><Link to="/latest" onClick={closeMenu}>All tutorials</Link></li>
+                )}
               </ul>
             </div>
 
-            <NavLink to="/trending" onClick={() => setMenuOpen(false)}>Trending</NavLink>
-            <NavLink to="/contact" onClick={() => setMenuOpen(false)}>Contact Us</NavLink>
+            <NavLink to="/trending" onClick={closeMenu}>Trending</NavLink>
+            <NavLink to="/contact" onClick={closeMenu}>Contact Us</NavLink>
 
             <form className="search-form search-form--mobile" onSubmit={submitSearch} role="search">
               <input
