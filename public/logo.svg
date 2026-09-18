@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" role="img" aria-label="Vatsraj Tech">
+  <defs>
+    <linearGradient id="vtGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon -->
+  <rect x="8" y="14" width="52" height="52" rx="14" fill="url(#vtGrad)"/>
+  <path d="M20 30 L34 52 L48 30" fill="none" stroke="#ffffff" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Text -->
+  <text x="76" y="45" font-family="Inter, Segoe UI, Arial, sans-serif"
+        font-size="26" font-weight="700" fill="#111827" letter-spacing="0.5">
+    Vatsraj
+  </text>
+  <text x="76" y="66" font-family="Inter, Segoe UI, Arial, sans-serif"
+        font-size="13" font-weight="600" fill="#6b7280" letter-spacing="3">
+    TECH
+  </text>
+</svg>
