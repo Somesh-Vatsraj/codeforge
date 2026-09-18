@@ -73,7 +73,12 @@ export default function Post() {
     return (
       <div className="container" style={{ padding: '60px 0' }}>
         {error === 'not-found' ? (
-          <EmptyState title="Tutorial not found" message="The link may be broken, or the post is still a draft." actionLabel="Back to homepage" actionTo="/" />
+          <EmptyState
+            title="Tutorial not found"
+            message="The link may be broken, or the post is still a draft."
+            actionLabel="Back to homepage"
+            actionTo="/"
+          />
         ) : (
           <p className="alert alert--error">{error}</p>
         )}
@@ -133,220 +138,239 @@ export default function Post() {
 
         <div className="home-layout">
           <main className="home-main">
-            <header className="post-header">
-              <h1>{post.title}</h1>
-              <div className="post-header__meta">
-                <time dateTime={post.published_at}>{formatDate(post.published_at)}</time>
-                <span className="dot">•</span>
-                <span>{minutes} min read</span>
-                {post.category_name && (
-                  <>
-                    <span className="dot">•</span>
-                    <Link to={`/category/${post.category_slug}`}>{post.category_name}</Link>
-                  </>
+            <div className="post-shell">
+
+              {/* ---------- Header ---------- */}
+              <header className="post-header">
+                <h1>{post.title}</h1>
+                <div className="post-header__meta">
+                  <time dateTime={post.published_at}>{formatDate(post.published_at)}</time>
+                  <span className="dot">•</span>
+                  <span>{minutes} min read</span>
+                  {post.category_name && (
+                    <>
+                      <span className="dot">•</span>
+                      <Link to={`/category/${post.category_slug}`}>{post.category_name}</Link>
+                    </>
+                  )}
+                </div>
+              </header>
+
+              {/* ---------- Thumbnail (1px gap) ---------- */}
+              {post.thumbnail_url && (
+                <figure className="post-thumb">
+                  <img src={post.thumbnail_url} alt={post.title} loading="eager" decoding="async" />
+                </figure>
+              )}
+
+              {/* ---------- Action buttons ---------- */}
+              <div className="post-actions">
+                {post.live_preview && previewDoc && (
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={() => {
+                      setShowPreview(true);
+                      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    ▶ Live Preview
+                  </button>
                 )}
-              </div>
-            </header>
-
-            {post.thumbnail_url && (
-              <figure className="post-thumb">
-                <img src={post.thumbnail_url} alt={post.title} loading="eager" decoding="async" />
-              </figure>
-            )}
-
-            <div className="post-actions">
-              {post.live_preview && previewDoc && (
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={() => {
-                    setShowPreview(true);
-                    document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  ▶ Live Preview
+                <button type="button" className="btn btn--ghost" onClick={downloadProject}>
+                  ⬇ Download Project
                 </button>
-              )}
-              <button type="button" className="btn btn--ghost" onClick={downloadProject}>
-                ⬇ Download Project
-              </button>
-              {watchUrl && (
-                <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
-                  Watch on YouTube
-                </a>
-              )}
-            </div>
-
-            <div
-              className="article-content"
-              dangerouslySetInnerHTML={{ __html: post.article_content || '' }}
-            />
-
-            {images.length > 0 && (
-              <section className="project-section">
-                <h2>Project Images</h2>
-                <div className="article-gallery__grid">
-                  {images.map((img) => (
-                    <figure key={img.id}>
-                      <img src={img.image_url} alt={img.alt_text || ''} loading="lazy" />
-                      {img.caption && <figcaption>{img.caption}</figcaption>}
-                    </figure>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {features.length > 0 && (
-              <section className="project-section">
-                <h2>Project Features</h2>
-                <ul className="feature-list">
-                  {features.map((feature, i) => <li key={i}>{feature}</li>)}
-                </ul>
-              </section>
-            )}
-
-            {technologies.length > 0 && (
-              <section className="project-section">
-                <h2>Technologies Used</h2>
-                <ul className="tech-list">
-                  {technologies.map((tech) => (
-                    <li key={tech} className="chip chip--tech">{tech}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {embedUrl && (
-              <section className="project-section">
-                <h2>Video Tutorial</h2>
-                <div className="video-frame">
-                  <iframe
-                    src={embedUrl}
-                    title={`${post.title} video tutorial`}
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </section>
-            )}
-
-            {post.live_preview && previewDoc && (
-              <section className="project-section" id="live-preview">
-                <h2>Live Preview</h2>
-                {showPreview ? (
-                  <>
-                    <p className="muted small">Sandboxed preview — no access to cookies or admin data.</p>
-                    <div className="preview-frame">
-                      <iframe
-                        title={`${post.title} live preview`}
-                        srcDoc={previewDoc}
-                        sandbox="allow-scripts allow-modals allow-popups"
-                        loading="lazy"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <button type="button" className="btn btn--primary" onClick={() => setShowPreview(true)}>
-                    Show Preview
-                  </button>
+                {watchUrl && (
+                  <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
+                    Watch on YouTube
+                  </a>
                 )}
-              </section>
-            )}
-
-            {files.length > 0 && (
-              <section className="project-section" id="source-code">
-                <div className="section-head-row">
-                  <h2>Source Code</h2>
-                  <button type="button" className="btn btn--primary btn--sm" onClick={downloadProject}>
-                    Download All Files
-                  </button>
-                </div>
-                <div className="code-stack">
-                  {files.map((file) => (
-                    <CodeBlock
-                      key={file.id}
-                      fileName={file.file_name}
-                      filePath={file.file_path}
-                      language={file.language}
-                      code={file.code_content}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {tags.length > 0 && (
-              <div className="post-tags">
-                <span className="post-tags__label">Tags</span>
-                {tags.map((tag) => (
-                  <Link key={tag.id} to={`/tag/${tag.slug}`}>#{tag.name}</Link>
-                ))}
               </div>
-            )}
 
-            <nav className="post-nav" aria-label="Post navigation">
-              <Link to="/latest" className="post-nav__item">
-                <span className="post-nav__label">Previous article</span>
-                <span className="post-nav__title">Back to all tutorials</span>
-              </Link>
-              <Link to="/trending" className="post-nav__item post-nav__item--next">
-                <span className="post-nav__label">Next article</span>
-                <span className="post-nav__title">See trending tutorials</span>
-              </Link>
-            </nav>
+              {/* ---------- Article content ---------- */}
+              <div
+                className="article-content"
+                dangerouslySetInnerHTML={{ __html: post.article_content || '' }}
+              />
 
-            {related.length > 0 && (
-              <section className="related-section">
-                <div className="related-head">
-                  <span className="post-tags__label">Related Articles</span>
-                  <span className="related-head__sub">More from author</span>
-                </div>
-                <div className="related-grid">
-                  {related.slice(0, 3).map((item) => (
-                    <article key={item.id}>
-                      <Link to={`/project/${item.slug}`} className="related-card__thumb" tabIndex={-1}>
-                        {item.thumbnail_url ? (
-                          <img src={item.thumbnail_url} alt="" loading="lazy" />
-                        ) : (
-                          <span className="post-card__placeholder">{"</>"}</span>
-                        )}
-                      </Link>
-                      <Link to={`/project/${item.slug}`} className="related-card__title">
-                        {item.title}
-                      </Link>
-                    </article>
+              {/* ---------- Extra images ---------- */}
+              {images.length > 0 && (
+                <section className="project-section">
+                  <h2>Project Images</h2>
+                  <div className="article-gallery__grid">
+                    {images.map((img) => (
+                      <figure key={img.id}>
+                        <img src={img.image_url} alt={img.alt_text || ''} loading="lazy" />
+                        {img.caption && <figcaption>{img.caption}</figcaption>}
+                      </figure>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ---------- Features ---------- */}
+              {features.length > 0 && (
+                <section className="project-section">
+                  <h2>Project Features</h2>
+                  <ul className="feature-list">
+                    {features.map((feature, i) => <li key={i}>{feature}</li>)}
+                  </ul>
+                </section>
+              )}
+
+              {/* ---------- Technologies ---------- */}
+              {technologies.length > 0 && (
+                <section className="project-section">
+                  <h2>Technologies Used</h2>
+                  <ul className="tech-list">
+                    {technologies.map((tech) => (
+                      <li key={tech} className="chip chip--tech">{tech}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* ---------- Video tutorial ---------- */}
+              {embedUrl && (
+                <section className="project-section">
+                  <h2>Video Tutorial</h2>
+                  <div className="video-frame">
+                    <iframe
+                      src={embedUrl}
+                      title={`${post.title} video tutorial`}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </section>
+              )}
+
+              {/* ---------- Live Preview ---------- */}
+              {post.live_preview && previewDoc && (
+                <section className="project-section" id="live-preview">
+                  <h2>Live Preview</h2>
+                  {showPreview ? (
+                    <>
+                      <p className="muted small">Sandboxed preview — no access to cookies or admin data.</p>
+                      <div className="preview-frame">
+                        <iframe
+                          title={`${post.title} live preview`}
+                          srcDoc={previewDoc}
+                          sandbox="allow-scripts allow-modals allow-popups"
+                          loading="lazy"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <button type="button" className="btn btn--primary" onClick={() => setShowPreview(true)}>
+                      Show Preview
+                    </button>
+                  )}
+                </section>
+              )}
+
+              {/* ---------- Source code files ---------- */}
+              {files.length > 0 && (
+                <section className="project-section" id="source-code">
+                  <div className="section-head-row">
+                    <h2>Source Code</h2>
+                    <button type="button" className="btn btn--primary btn--sm" onClick={downloadProject}>
+                      Download All Files
+                    </button>
+                  </div>
+                  <div className="code-stack">
+                    {files.map((file) => (
+                      <CodeBlock
+                        key={file.id}
+                        fileName={file.file_name}
+                        filePath={file.file_path}
+                        language={file.language}
+                        code={file.code_content}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ---------- Tags ---------- */}
+              {tags.length > 0 && (
+                <div className="post-tags">
+                  <span className="post-tags__label">Tags</span>
+                  {tags.map((tag) => (
+                    <Link key={tag.id} to={`/tag/${tag.slug}`}>#{tag.name}</Link>
                   ))}
                 </div>
+              )}
+
+              {/* ---------- Prev / Next ---------- */}
+              <nav className="post-nav" aria-label="Post navigation">
+                <Link to="/latest" className="post-nav__item">
+                  <span className="post-nav__label">Previous article</span>
+                  <span className="post-nav__title">Back to all tutorials</span>
+                </Link>
+                <Link to="/trending" className="post-nav__item post-nav__item--next">
+                  <span className="post-nav__label">Next article</span>
+                  <span className="post-nav__title">See trending tutorials</span>
+                </Link>
+              </nav>
+
+              {/* ---------- Related ---------- */}
+              {related.length > 0 && (
+                <section className="related-section">
+                  <div className="related-head">
+                    <span className="post-tags__label">Related Articles</span>
+                    <span className="related-head__sub">More from author</span>
+                  </div>
+                  <div className="related-grid">
+                    {related.slice(0, 3).map((item) => (
+                      <article key={item.id}>
+                        <Link to={`/project/${item.slug}`} className="related-card__thumb" tabIndex={-1}>
+                          {item.thumbnail_url ? (
+                            <img src={item.thumbnail_url} alt="" loading="lazy" />
+                          ) : (
+                            <span className="post-card__placeholder">{"</>"}</span>
+                          )}
+                        </Link>
+                        <Link to={`/project/${item.slug}`} className="related-card__title">
+                          {item.title}
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ---------- Comment form ---------- */}
+              <section className="comment-section">
+                <h3 className="comment-section__title">Leave a Reply</h3>
+                <form className="comment-form" onSubmit={(e) => e.preventDefault()}>
+                  <div>
+                    <label htmlFor="comment">Comment:</label>
+                    <textarea id="comment" />
+                  </div>
+                  <div>
+                    <label htmlFor="name">Name:*</label>
+                    <input id="name" type="text" required />
+                  </div>
+                  <div>
+                    <label htmlFor="email">Email:*</label>
+                    <input id="email" type="email" required />
+                  </div>
+                  <label className="comment-form__check">
+                    <input type="checkbox" />
+                    Save my name, email, and website in this browser for the next time I comment.
+                  </label>
+                  <div>
+                    <button type="submit" className="btn btn--primary">Post Comment</button>
+                  </div>
+                </form>
               </section>
-            )}
 
-            <section className="comment-section">
-              <h3 className="comment-section__title">Leave a Reply</h3>
-              <form className="comment-form" onSubmit={(e) => e.preventDefault()}>
-                <div>
-                  <label htmlFor="comment">Comment:</label>
-                  <textarea id="comment" />
-                </div>
-                <div>
-                  <label htmlFor="name">Name:*</label>
-                  <input id="name" type="text" required />
-                </div>
-                <div>
-                  <label htmlFor="email">Email:*</label>
-                  <input id="email" type="email" required />
-                </div>
-                <label className="comment-form__check">
-                  <input type="checkbox" />
-                  Save my name, email, and website in this browser for the next time I comment.
-                </label>
-                <div>
-                  <button type="submit" className="btn btn--primary">Post Comment</button>
-                </div>
-              </form>
-            </section>
+              {/* ---------- Bottom ad ---------- */}
+              <AdSlot slot="adsense_slot_post_bottom" />
 
-            <AdSlot slot="adsense_slot_post_bottom" />
+            </div>
           </main>
 
           <Sidebar showFeatured={false} />
