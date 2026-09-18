@@ -40,7 +40,7 @@ export default function Header() {
       {showTopBar && (
         <div className="top-bar">
           Impressed by our work? Hire us for exceptional web development services on Fiverr.
-          <a href="https://www.fiverr.com" target="_blank" rel="noopener noreferrer">Hire us on Fiverr</a>
+          <a href="https://www.fiverr.com/s/zAW3GKK" target="_blank" rel="noopener noreferrer">Hire us on Fiverr</a>
           <button
             type="button"
             className="top-bar__close"
