@@ -34,8 +34,16 @@ const GROUPS = [
     ],
   },
   {
+    title: 'Comments',
+    hint: 'Turn comments on or off site-wide. Auto-approve publishes new comments immediately; otherwise they wait for review in the Comments section.',
+    fields: [
+      ['comments_enabled', 'Enable comments', 'toggle'],
+      ['comments_auto_approve', 'Auto-approve new comments', 'toggle'],
+    ],
+  },
+  {
     title: 'Google AdSense',
-    hint: 'Ads are only rendered when ads are enabled AND a publisher ID plus slot IDs are set. Use placeholders until your account is approved.',
+    hint: 'Ads are only rendered when ads are enabled AND a publisher ID plus slot IDs are set.',
     fields: [
       ['ads_enabled', 'Enable ads', 'toggle'],
       ['adsense_publisher_id', 'Publisher ID (ca-pub-…)', 'text'],
