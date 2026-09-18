@@ -87,10 +87,13 @@ export default function Footer() {
     },
   ].filter((s) => s.url);
 
+  // If no socials configured, drop the middle column so the grid stays balanced
+  const hasSocials = socials.length > 0;
+
   return (
     <footer className="site-footer">
       <div className="container">
-        <div className="site-footer__grid">
+        <div className={`site-footer__grid ${hasSocials ? '' : 'site-footer__grid--no-socials'}`}>
           {/* ==================== Column 1 — Brand + About ==================== */}
           <div className="site-footer__col site-footer__col--about">
             <Link to="/" className="site-footer__brand">
@@ -117,11 +120,10 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* ==================== Column 2 — Follow Us ==================== */}
-          <div className="site-footer__col">
-            <h3>Follow Us</h3>
-
-            {socials.length > 0 ? (
+          {/* ==================== Column 2 — Follow Us (only if configured) ==================== */}
+          {hasSocials && (
+            <div className="site-footer__col">
+              <h3>Follow Us</h3>
               <ul className="social-list">
                 {socials.map(({ name, url, Icon }) => (
                   <li key={name}>
@@ -137,12 +139,8 @@ export default function Footer() {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="muted small">
-                No social links configured yet. Add them in the admin panel.
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* ==================== Column 3 — Quick links ==================== */}
           <div className="site-footer__col">
