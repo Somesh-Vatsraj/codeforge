@@ -47,7 +47,6 @@ export default function Post() {
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
-  // ---------- Comments state ----------
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentForm, setCommentForm] = useState({ name: '', email: '', comment: '', website: '' });
@@ -76,7 +75,6 @@ export default function Post() {
     return () => { cancelled = true; };
   }, [slug]);
 
-  // Load comments when post is ready
   useEffect(() => {
     if (!post) return;
     let cancelled = false;
@@ -118,17 +116,9 @@ export default function Post() {
 
       if (res.status === 'approved' && res.comment) {
         setComments((prev) => [res.comment, ...prev]);
-        setCommentState({
-          submitting: false,
-          error: '',
-          success: res.message || 'Your comment has been posted!',
-        });
+        setCommentState({ submitting: false, error: '', success: res.message || 'Your comment has been posted!' });
       } else {
-        setCommentState({
-          submitting: false,
-          error: '',
-          success: res.message || 'Your comment is awaiting moderation.',
-        });
+        setCommentState({ submitting: false, error: '', success: res.message || 'Your comment is awaiting moderation.' });
       }
 
       setCommentForm({ name: '', email: '', comment: '', website: '' });
@@ -153,8 +143,8 @@ export default function Post() {
           <EmptyState
             title="Tutorial not found"
             message="The link may be broken, or the post is still a draft."
-            actionLabel="Back to homepage"
-            actionTo="/"
+            actionLabel="Back to Blog"
+            actionTo="/blog"
           />
         ) : (
           <p className="alert alert--error">{error}</p>
@@ -371,12 +361,12 @@ export default function Post() {
               )}
 
               <nav className="post-nav" aria-label="Post navigation">
-                <Link to="/latest" className="post-nav__item">
-                  <span className="post-nav__label">Previous article</span>
-                  <span className="post-nav__title">Back to all tutorials</span>
+                <Link to="/blog" className="post-nav__item">
+                  <span className="post-nav__label">Back to</span>
+                  <span className="post-nav__title">All blog posts</span>
                 </Link>
                 <Link to="/trending" className="post-nav__item post-nav__item--next">
-                  <span className="post-nav__label">Next article</span>
+                  <span className="post-nav__label">Next up</span>
                   <span className="post-nav__title">See trending tutorials</span>
                 </Link>
               </nav>
@@ -406,7 +396,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ==================== COMMENTS ==================== */}
               <section className="comment-section">
                 {comments.length > 0 && (
                   <>
