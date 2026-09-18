@@ -268,8 +268,10 @@ a:hover { color: var(--brand-dark); }
   color: var(--text);
   flex-shrink: 0;
   letter-spacing: -.02em;
+  transition: opacity var(--t-fast);
 }
-.brand:hover { color: var(--text); }
+.brand:hover { color: var(--text); opacity: .9; }
+
 .brand__mark {
   display: grid; place-items: center;
   width: 34px; height: 34px;
@@ -282,12 +284,23 @@ a:hover { color: var(--brand-dark); }
   font-weight: 800;
   letter-spacing: -.05em;
   transition: transform var(--t) var(--ease-spring);
+  flex-shrink: 0;
 }
 .brand:hover .brand__mark {
   transform: rotate(-8deg) scale(1.08);
   animation: gradientShift 3s ease infinite;
 }
-.brand__logo { height: 28px; width: auto; }
+
+/* Logo — bada size (jab logo ho, site name hide) */
+.brand__logo {
+  display: block;
+  height: 52px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+}
+.brand__logo--large { height: 52px; }
+
 .brand__name { white-space: nowrap; }
 
 .main-nav {
@@ -1958,6 +1971,12 @@ a:hover { color: var(--brand-dark); }
   .site-header__inner { min-height: 56px; }
   .brand { font-size: 1rem; }
   .brand__mark { width: 32px; height: 32px; }
+  .brand__logo,
+  .brand__logo--large {
+    height: 40px;
+    max-width: 160px;
+  }
+  .brand__name { font-size: 16px; }
   .icon-btn { width: 36px; height: 36px; font-size: 1rem; }
 
   .post-shell {
