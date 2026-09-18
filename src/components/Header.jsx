@@ -81,19 +81,25 @@ export default function Header() {
         <div className="container site-header__inner">
 
           {/* Brand */}
-          <Link className="brand" to="/" onClick={closeMenu}>
-            {settings.logo_url ? (
-              <img
-                src={settings.logo_url}
-                alt={settings.site_name}
-                className="brand__logo"
-              />
-            ) : (
-              <span className="brand__mark" aria-hidden="true">{"</>"}</span>
-            )}
-            <span className="brand__name">{settings.site_name}</span>
-          </Link>
+        <Link className="brand" to="/" onClick={closeMenu}>
+  {settings.logo_url ? (
+    <img
+      src={settings.logo_url}
+      alt={settings.site_name}
+      className="brand__logo"
+      width={160}
+      height={40}
+      loading="eager"
+      onError={(e) => {
+        e.currentTarget.style.display = "none";
+        e.currentTarget.nextElementSibling?.classList.add("brand__mark--show");
+      }}
+    />
+  ) : null}
 
+  <span className="brand__mark" aria-hidden="true">{"</>"}</span>
+  <span className="brand__name">{settings.site_name}</span>
+</Link>
           {/* Desktop navigation */}
           <nav className="main-nav" aria-label="Main navigation">
             <NavLink to="/" end>Home</NavLink>
