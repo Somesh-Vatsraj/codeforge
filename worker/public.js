@@ -1,4 +1,4 @@
-import { json, fail, clamp, intOr, sha256Hex, clientIp } from './util.js';
+import { json, fail, clamp, intOr, sha256Hex, clientIp, safeString } from './util.js';
 
 const PUBLIC_SETTING_KEYS = [
   'site_name', 'site_description', 'logo_url', 'favicon_url', 'author_name',
@@ -16,6 +16,8 @@ const CARD_COLUMNS = `
   p.published_at, p.created_at, p.category_id,
   c.name AS category_name, c.slug AS category_slug
 `;
+
+/* ==================== helpers ==================== */
 
 async function attachTags(db, posts) {
   if (!posts.length) return posts;
@@ -59,6 +61,8 @@ function shapePost(row) {
     live_preview: !!row.live_preview,
   };
 }
+
+/* ==================== MAIN HANDLER ==================== */
 
 export async function handlePublic(request, env) {
   const url = new URL(request.url);
@@ -213,13 +217,21 @@ export async function handlePublic(request, env) {
     return json({ posts: await attachTags(env.DB, merged) });
   }
 
+  /* ---------- comments (GET + POST) ---------- */
+  const commentsMatch = path.match(/^\/posts\/([^/]+)\/comments$/);
+  if (commentsMatch) {
+    const slug = decodeURIComponent(commentsMatch[1]);
+    if (method === 'GET') return listComments(env, slug);
+    if (method === 'POST') return createComment(request, env, slug);
+  }
+
   /* ---------- post by slug ---------- */
   const postMatch = path.match(/^\/posts\/([^/]+)$/);
   if (postMatch && postMatch[1] !== '') {
     return getPostBySlug(request, env, decodeURIComponent(postMatch[1]));
   }
 
-  /* ---------- post listing (with sort=random) ---------- */
+  /* ---------- post listing ---------- */
   if (path === '/posts') {
     const posts = await listPosts(env, {
       page: url.searchParams.get('page'),
@@ -235,6 +247,8 @@ export async function handlePublic(request, env) {
 
   return fail('Not found', 404);
 }
+
+/* ==================== list posts ==================== */
 
 async function listPosts(env, opts = {}) {
   const page = clamp(intOr(opts.page, 1), 1, 500);
@@ -255,11 +269,9 @@ async function listPosts(env, opts = {}) {
   if (opts.featured === '1' || opts.featured === 'true') where.push('p.featured = 1');
   if (opts.trending === '1' || opts.trending === 'true') where.push('p.trending = 1');
 
-  // ---- SORT options ----
   let order = 'p.published_at DESC, p.id DESC';
   if (opts.sort === 'views') order = 'p.views DESC, p.published_at DESC';
   if (opts.sort === 'oldest') order = 'p.published_at ASC';
-  if (opts.sort === 'random') order = 'RANDOM()';
 
   const whereSql = where.join(' AND ');
 
@@ -281,6 +293,8 @@ async function listPosts(env, opts = {}) {
   const total = countRow?.total || 0;
   return { posts, total, page, pages: Math.ceil(total / limit) || 0 };
 }
+
+/* ==================== get post by slug ==================== */
 
 async function getPostBySlug(request, env, slug) {
   const row = await env.DB
@@ -311,6 +325,7 @@ async function getPostBySlug(request, env, slug) {
   post.files = filesRes.results || [];
   post.demo_files = post.live_preview ? (demoRes.results || []) : [];
 
+  // Safe view counting (one per visitor per post per day)
   try {
     const ip = clientIp(request);
     const ua = request.headers.get('user-agent') || '';
@@ -330,9 +345,108 @@ async function getPostBySlug(request, env, slug) {
     if (Math.random() < 0.02) {
       await env.DB.prepare("DELETE FROM views WHERE created_at < datetime('now', '-45 days')").run();
     }
-  } catch {
-    // View counting must never break the page.
-  }
+  } catch { /* view counting never breaks page */ }
 
   return json({ post });
+}
+
+/* ==================== list comments ==================== */
+
+async function listComments(env, slug) {
+  const post = await env.DB
+    .prepare("SELECT id FROM posts WHERE slug = ? AND status = 'published'")
+    .bind(slug)
+    .first();
+  if (!post) return fail('Post not found', 404);
+
+  const { results } = await env.DB
+    .prepare(
+      `SELECT id, author_name, body, created_at
+       FROM comments
+       WHERE post_id = ? AND status = 'approved'
+       ORDER BY created_at DESC
+       LIMIT 200`,
+    )
+    .bind(post.id)
+    .all();
+
+  return json({ comments: results || [] });
+}
+
+/* ==================== create comment ==================== */
+
+async function createComment(request, env, slug) {
+  // Check comments settings
+  const settingsRes = await env.DB
+    .prepare("SELECT key, value FROM settings WHERE key IN ('comments_enabled', 'comments_auto_approve')")
+    .all();
+  const settingsMap = Object.fromEntries((settingsRes.results || []).map((r) => [r.key, r.value]));
+
+  if (settingsMap.comments_enabled === '0') {
+    return fail('Comments are currently disabled.', 403);
+  }
+
+  const post = await env.DB
+    .prepare("SELECT id FROM posts WHERE slug = ? AND status = 'published'")
+    .bind(slug)
+    .first();
+  if (!post) return fail('Post not found', 404);
+
+  const body = await request.json().catch(() => null);
+  if (!body) return fail('Invalid request body.');
+
+  // Honeypot — bots fill the hidden "website" field
+  if (typeof body.website === 'string' && body.website.trim() !== '') {
+    return json({ ok: true, status: 'pending', message: 'Thanks!' });
+  }
+
+  const name = safeString(body.name, 60).trim();
+  const email = safeString(body.email, 120).trim().toLowerCase();
+  const comment = safeString(body.comment, 2000).trim();
+
+  if (name.length < 2) return fail('Please enter a name (at least 2 characters).');
+  if (name.length > 60) return fail('Name is too long (max 60 characters).');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return fail('Please enter a valid email address.');
+  }
+  if (comment.length < 5) return fail('Comment is too short (min 5 characters).');
+  if (comment.length > 2000) return fail('Comment is too long (max 2000 characters).');
+
+  // Rate limit: 3 comments per IP per hour
+  const ip = clientIp(request);
+  const ipHash = await sha256Hex(`${ip}|comment`);
+
+  const recent = await env.DB
+    .prepare("SELECT COUNT(*) AS n FROM comments WHERE ip_hash = ? AND created_at > datetime('now', '-1 hour')")
+    .bind(ipHash)
+    .first();
+
+  if ((recent?.n || 0) >= 3) {
+    return fail('You have posted too many comments recently. Please try again later.', 429);
+  }
+
+  const emailHash = await sha256Hex(email.toLowerCase());
+  const status = settingsMap.comments_auto_approve === '0' ? 'pending' : 'approved';
+
+  const result = await env.DB
+    .prepare(
+      `INSERT INTO comments (post_id, author_name, author_email_hash, body, status, ip_hash)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(post.id, name, emailHash, comment, status, ipHash)
+    .run();
+
+  const created = await env.DB
+    .prepare('SELECT id, author_name, body, created_at FROM comments WHERE id = ?')
+    .bind(result.meta.last_row_id)
+    .first();
+
+  return json({
+    ok: true,
+    status,
+    comment: status === 'approved' ? created : null,
+    message: status === 'approved'
+      ? 'Your comment has been posted.'
+      : 'Your comment is awaiting moderation.',
+  });
 }
