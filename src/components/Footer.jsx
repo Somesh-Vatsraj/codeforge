@@ -12,7 +12,16 @@ const Icons = {
     </svg>
   ),
   Instagram: (props) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
       <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
       <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -35,72 +44,107 @@ const Icons = {
   ),
 };
 
+function normalizeUrl(url) {
+  if (!url) return '';
+  const u = String(url).trim();
+  if (!u) return '';
+  // Skip placeholder values that admins may accidentally save
+  if (/^#/.test(u)) return '';
+  if (!/^https?:\/\//i.test(u)) return '';
+  return u;
+}
+
 export default function Footer() {
   const { settings } = useSettings();
   const year = new Date().getFullYear();
 
-  // Build list of socials that are actually configured (with fallbacks)
+  // Only include socials that have a real, configured URL
   const socials = [
-    { name: 'Facebook', url: settings.social_facebook || '#facebook', Icon: Icons.Facebook },
-    { name: 'Instagram', url: settings.social_instagram || '#instagram', Icon: Icons.Instagram },
-    { name: 'YouTube', url: settings.social_youtube || '#youtube', Icon: Icons.YouTube },
-    { name: 'Twitter', url: settings.social_twitter || '#twitter', Icon: Icons.Twitter },
-    { name: 'GitHub', url: settings.social_github || '#github', Icon: Icons.GitHub },
-  ];
-
-  // Only show socials that have a URL (fallbacks count as URLs here so all show by default)
-  const visibleSocials = socials.filter((s) => s.url);
+    {
+      name: 'Facebook',
+      url: normalizeUrl(settings.social_facebook),
+      Icon: Icons.Facebook,
+    },
+    {
+      name: 'Instagram',
+      url: normalizeUrl(settings.social_instagram),
+      Icon: Icons.Instagram,
+    },
+    {
+      name: 'YouTube',
+      url: normalizeUrl(settings.social_youtube || settings.youtube_channel),
+      Icon: Icons.YouTube,
+    },
+    {
+      name: 'Twitter',
+      url: normalizeUrl(settings.social_twitter),
+      Icon: Icons.Twitter,
+    },
+    {
+      name: 'GitHub',
+      url: normalizeUrl(settings.social_github),
+      Icon: Icons.GitHub,
+    },
+  ].filter((s) => s.url);
 
   return (
     <footer className="site-footer">
       <div className="container">
         <div className="site-footer__grid">
-          {/* Column 1 — Brand + About */}
+          {/* ==================== Column 1 — Brand + About ==================== */}
           <div className="site-footer__col site-footer__col--about">
             <Link to="/" className="site-footer__brand">
               {settings.logo_url ? (
                 <img
                   src={settings.logo_url}
-                  alt={settings.site_name}
+                  alt={settings.site_name || 'Logo'}
                   className="brand__logo"
                 />
               ) : (
                 <span className="brand__mark" aria-hidden="true">{"</>"}</span>
               )}
-              <span className="brand__name">{settings.site_name}</span>
+              <span className="brand__name">{settings.site_name || 'CodeForge'}</span>
             </Link>
+
             <h3>About Us</h3>
             <p>
-              {settings.site_name} is a blog dedicated to providing valuable and informative
-              content about web development technologies such as HTML, CSS, JavaScript,
-              React, and more.
+              {settings.site_name || 'CodeForge'} is a blog dedicated to providing valuable
+              and informative content about web development technologies such as HTML, CSS,
+              JavaScript, React, and more.
             </p>
             <Link to="/about" className="site-footer__more">
               Read more <span aria-hidden="true">→</span>
             </Link>
           </div>
 
-          {/* Column 2 — Follow Us */}
+          {/* ==================== Column 2 — Follow Us ==================== */}
           <div className="site-footer__col">
             <h3>Follow Us</h3>
-            <ul className="social-list">
-              {visibleSocials.map(({ name, url, Icon }) => (
-                <li key={name}>
-                  <a
-                    href={url}
-                    target={url.startsWith('http') ? '_blank' : undefined}
-                    rel="noopener noreferrer"
-                    aria-label={name}
-                    title={name}
-                  >
-                    <Icon width="18" height="18" />
-                  </a>
-                </li>
-              ))}
-            </ul>
+
+            {socials.length > 0 ? (
+              <ul className="social-list">
+                {socials.map(({ name, url, Icon }) => (
+                  <li key={name}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={name}
+                      title={name}
+                    >
+                      <Icon width="18" height="18" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">
+                No social links configured yet. Add them in the admin panel.
+              </p>
+            )}
           </div>
 
-          {/* Column 3 — Quick links */}
+          {/* ==================== Column 3 — Quick links ==================== */}
           <div className="site-footer__col">
             <h3>Quick Links</h3>
             <ul className="site-footer__links">
@@ -113,10 +157,10 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom row — copyright + legal links */}
+        {/* ==================== Bottom row ==================== */}
         <div className="site-footer__bottom">
           <p>
-            Copyright © {year} <strong>{settings.site_name}</strong>. All Rights Reserved.
+            Copyright © {year} <strong>{settings.site_name || 'CodeForge'}</strong>. All Rights Reserved.
           </p>
           <nav className="footer-links" aria-label="Legal">
             <Link to="/about">About Us</Link>
