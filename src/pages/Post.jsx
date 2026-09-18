@@ -187,6 +187,29 @@ export default function Post() {
     commentCount: comments.length,
   };
 
+  /* ---------- reusable actions block ---------- */
+  const renderActions = (variant) => (
+    <div className={`post-actions post-actions--${variant}`}>
+      {post.live_preview && previewDoc && (
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={jumpToPreview}
+        >
+          ▶ Live Preview
+        </button>
+      )}
+      <button type="button" className="btn btn--ghost" onClick={downloadProject}>
+        ⬇ Download Project
+      </button>
+      {watchUrl && (
+        <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
+          Watch on YouTube
+        </a>
+      )}
+    </div>
+  );
+
   return (
     <article className="post-page">
       <Seo
@@ -236,6 +259,9 @@ export default function Post() {
                   <img src={post.thumbnail_url} alt={post.title} loading="eager" decoding="async" />
                 </figure>
               )}
+
+              {/* ========== TOP ACTIONS ========== */}
+              {renderActions('top')}
 
               <div
                 className="article-content"
@@ -376,29 +402,8 @@ export default function Post() {
                 </div>
               )}
 
-              {/* =============================================
-                  POST ACTIONS — moved to the end of the post
-                  (Live Preview / Download / Watch on YouTube)
-                  ============================================= */}
-              <div className="post-actions post-actions--bottom">
-                {post.live_preview && previewDoc && (
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={jumpToPreview}
-                  >
-                    ▶ Live Preview
-                  </button>
-                )}
-                <button type="button" className="btn btn--ghost" onClick={downloadProject}>
-                  ⬇ Download Project
-                </button>
-                {watchUrl && (
-                  <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
-                    Watch on YouTube
-                  </a>
-                )}
-              </div>
+              {/* ========== BOTTOM ACTIONS ========== */}
+              {renderActions('bottom')}
 
               {related.length > 0 && (
                 <section className="related-section">
