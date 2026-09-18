@@ -115,7 +115,7 @@ export default function Sidebar({ showFeatured = true }) {
 
           <a
             className="follow-btn follow-btn--ig"
-            href={settings.social_twitter || 'https://www.instagram.com'}
+            href={settings.social_instagram || 'https://www.instagram.com'}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Follow on Instagram"
