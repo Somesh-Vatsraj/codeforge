@@ -23,6 +23,22 @@ function asArray(value) {
   return [];
 }
 
+function timeAgo(dateString) {
+  if (!dateString) return '';
+  const iso = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diff = Math.max(0, Date.now() - then);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
+  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 export default function Post() {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
@@ -30,6 +46,12 @@ export default function Post() {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+
+  // ---------- Comments state ----------
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentForm, setCommentForm] = useState({ name: '', email: '', comment: '', website: '' });
+  const [commentState, setCommentState] = useState({ submitting: false, error: '', success: '' });
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +76,18 @@ export default function Post() {
     return () => { cancelled = true; };
   }, [slug]);
 
+  // Load comments when post is ready
+  useEffect(() => {
+    if (!post) return;
+    let cancelled = false;
+    setCommentsLoading(true);
+    api.get(`/posts/${encodeURIComponent(post.slug)}/comments`)
+      .then((d) => { if (!cancelled) setComments(d.comments || []); })
+      .catch(() => { if (!cancelled) setComments([]); })
+      .finally(() => { if (!cancelled) setCommentsLoading(false); });
+    return () => { cancelled = true; };
+  }, [post]);
+
   const previewDoc = useMemo(
     () => (post?.live_preview ? buildPreviewDocument(post.demo_files) : null),
     [post],
@@ -63,6 +97,49 @@ export default function Post() {
     if (!post) return;
     const blob = buildProjectZip(post);
     downloadBlob(blob, `${slugify(post.slug || post.title) || 'project'}.zip`);
+  };
+
+  const submitComment = async (event) => {
+    event.preventDefault();
+    if (!post) return;
+
+    setCommentState({ submitting: true, error: '', success: '' });
+
+    try {
+      const res = await api.post(
+        `/posts/${encodeURIComponent(post.slug)}/comments`,
+        {
+          name: commentForm.name.trim(),
+          email: commentForm.email.trim(),
+          comment: commentForm.comment.trim(),
+          website: commentForm.website,
+        },
+      );
+
+      if (res.status === 'approved' && res.comment) {
+        setComments((prev) => [res.comment, ...prev]);
+        setCommentState({
+          submitting: false,
+          error: '',
+          success: res.message || 'Your comment has been posted!',
+        });
+      } else {
+        setCommentState({
+          submitting: false,
+          error: '',
+          success: res.message || 'Your comment is awaiting moderation.',
+        });
+      }
+
+      setCommentForm({ name: '', email: '', comment: '', website: '' });
+      setTimeout(() => setCommentState((s) => ({ ...s, success: '' })), 6000);
+    } catch (err) {
+      setCommentState({
+        submitting: false,
+        error: err.message || 'Could not post your comment. Please try again.',
+        success: '',
+      });
+    }
   };
 
   if (status === 'loading') {
@@ -109,6 +186,7 @@ export default function Post() {
     mainEntityOfPage: { '@type': 'WebPage', '@id': window.location.origin + canonical },
     articleSection: post.category_name,
     keywords: tags.map((t) => t.name).join(', '),
+    commentCount: comments.length,
   };
 
   return (
@@ -140,7 +218,6 @@ export default function Post() {
           <main className="home-main">
             <div className="post-shell">
 
-              {/* ---------- Header ---------- */}
               <header className="post-header">
                 <h1>{post.title}</h1>
                 <div className="post-header__meta">
@@ -156,14 +233,12 @@ export default function Post() {
                 </div>
               </header>
 
-              {/* ---------- Thumbnail (1px gap) ---------- */}
               {post.thumbnail_url && (
                 <figure className="post-thumb">
                   <img src={post.thumbnail_url} alt={post.title} loading="eager" decoding="async" />
                 </figure>
               )}
 
-              {/* ---------- Action buttons ---------- */}
               <div className="post-actions">
                 {post.live_preview && previewDoc && (
                   <button
@@ -187,13 +262,11 @@ export default function Post() {
                 )}
               </div>
 
-              {/* ---------- Article content ---------- */}
               <div
                 className="article-content"
                 dangerouslySetInnerHTML={{ __html: post.article_content || '' }}
               />
 
-              {/* ---------- Extra images ---------- */}
               {images.length > 0 && (
                 <section className="project-section">
                   <h2>Project Images</h2>
@@ -208,7 +281,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Features ---------- */}
               {features.length > 0 && (
                 <section className="project-section">
                   <h2>Project Features</h2>
@@ -218,7 +290,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Technologies ---------- */}
               {technologies.length > 0 && (
                 <section className="project-section">
                   <h2>Technologies Used</h2>
@@ -230,7 +301,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Video tutorial ---------- */}
               {embedUrl && (
                 <section className="project-section">
                   <h2>Video Tutorial</h2>
@@ -246,7 +316,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Live Preview ---------- */}
               {post.live_preview && previewDoc && (
                 <section className="project-section" id="live-preview">
                   <h2>Live Preview</h2>
@@ -270,7 +339,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Source code files ---------- */}
               {files.length > 0 && (
                 <section className="project-section" id="source-code">
                   <div className="section-head-row">
@@ -293,7 +361,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Tags ---------- */}
               {tags.length > 0 && (
                 <div className="post-tags">
                   <span className="post-tags__label">Tags</span>
@@ -303,7 +370,6 @@ export default function Post() {
                 </div>
               )}
 
-              {/* ---------- Prev / Next ---------- */}
               <nav className="post-nav" aria-label="Post navigation">
                 <Link to="/latest" className="post-nav__item">
                   <span className="post-nav__label">Previous article</span>
@@ -315,7 +381,6 @@ export default function Post() {
                 </Link>
               </nav>
 
-              {/* ---------- Related ---------- */}
               {related.length > 0 && (
                 <section className="related-section">
                   <div className="related-head">
@@ -341,33 +406,118 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ---------- Comment form ---------- */}
+              {/* ==================== COMMENTS ==================== */}
               <section className="comment-section">
-                <h3 className="comment-section__title">Leave a Reply</h3>
-                <form className="comment-form" onSubmit={(e) => e.preventDefault()}>
+                <h3 className="comment-section__title">
+                  {comments.length > 0
+                    ? `${comments.length} ${comments.length === 1 ? 'Comment' : 'Comments'}`
+                    : 'Leave a Reply'}
+                </h3>
+
+                {commentsLoading && <Spinner label="Loading comments…" compact />}
+
+                {!commentsLoading && comments.length > 0 && (
+                  <ol className="comment-list">
+                    {comments.map((c) => (
+                      <li key={c.id} className="comment-item">
+                        <div className="comment-item__avatar" aria-hidden="true">
+                          {(c.author_name || '?').trim().charAt(0).toUpperCase()}
+                        </div>
+                        <div className="comment-item__body">
+                          <div className="comment-item__head">
+                            <strong className="comment-item__name">{c.author_name}</strong>
+                            <time className="comment-item__time" dateTime={c.created_at}>
+                              {timeAgo(c.created_at)}
+                            </time>
+                          </div>
+                          <p className="comment-item__text">{c.body}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                <h3 className="comment-section__title comment-section__title--form">
+                  Leave a Reply
+                </h3>
+
+                {commentState.error && (
+                  <p className="alert alert--error" role="alert">{commentState.error}</p>
+                )}
+                {commentState.success && (
+                  <p className="alert alert--success" role="status">{commentState.success}</p>
+                )}
+
+                <form className="comment-form" onSubmit={submitComment}>
                   <div>
-                    <label htmlFor="comment">Comment:</label>
-                    <textarea id="comment" />
+                    <label htmlFor="comment-body">Comment:</label>
+                    <textarea
+                      id="comment-body"
+                      value={commentForm.comment}
+                      onChange={(e) => setCommentForm({ ...commentForm, comment: e.target.value })}
+                      required
+                      minLength={5}
+                      maxLength={2000}
+                      disabled={commentState.submitting}
+                    />
                   </div>
                   <div>
-                    <label htmlFor="name">Name:*</label>
-                    <input id="name" type="text" required />
+                    <label htmlFor="comment-name">Name:*</label>
+                    <input
+                      id="comment-name"
+                      type="text"
+                      value={commentForm.name}
+                      onChange={(e) => setCommentForm({ ...commentForm, name: e.target.value })}
+                      required
+                      minLength={2}
+                      maxLength={60}
+                      autoComplete="name"
+                      disabled={commentState.submitting}
+                    />
                   </div>
                   <div>
-                    <label htmlFor="email">Email:*</label>
-                    <input id="email" type="email" required />
+                    <label htmlFor="comment-email">Email:*</label>
+                    <input
+                      id="comment-email"
+                      type="email"
+                      value={commentForm.email}
+                      onChange={(e) => setCommentForm({ ...commentForm, email: e.target.value })}
+                      required
+                      autoComplete="email"
+                      disabled={commentState.submitting}
+                    />
                   </div>
+
+                  {/* Honeypot — hidden from real users */}
+                  <div className="comment-form__honeypot" aria-hidden="true">
+                    <label htmlFor="comment-website">Website</label>
+                    <input
+                      id="comment-website"
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={commentForm.website}
+                      onChange={(e) => setCommentForm({ ...commentForm, website: e.target.value })}
+                    />
+                  </div>
+
                   <label className="comment-form__check">
                     <input type="checkbox" />
                     Save my name, email, and website in this browser for the next time I comment.
                   </label>
+
                   <div>
-                    <button type="submit" className="btn btn--primary">Post Comment</button>
+                    <button
+                      type="submit"
+                      className="btn btn--primary"
+                      disabled={commentState.submitting}
+                    >
+                      {commentState.submitting ? 'Posting…' : 'Post Comment'}
+                    </button>
                   </div>
                 </form>
               </section>
 
-              {/* ---------- Bottom ad ---------- */}
               <AdSlot slot="adsense_slot_post_bottom" />
 
             </div>
