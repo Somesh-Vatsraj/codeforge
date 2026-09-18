@@ -3,7 +3,7 @@ import { json, fail, clamp, intOr, sha256Hex, clientIp, safeString } from './uti
 const PUBLIC_SETTING_KEYS = [
   'site_name', 'site_description', 'logo_url', 'favicon_url', 'author_name',
   'contact_email', 'footer_text', 'social_twitter', 'social_github',
-  'social_youtube', 'social_facebook', 'youtube_channel',
+  'social_youtube', 'social_facebook', 'youtube_channel','social_instagram',
   'seo_default_title', 'seo_default_description',
   'ads_enabled', 'adsense_publisher_id', 'adsense_slot_home',
   'adsense_slot_post_top', 'adsense_slot_post_bottom',
