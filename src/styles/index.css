@@ -378,7 +378,6 @@ a:hover { color: var(--brand-dark); }
   padding-left: 24px;
 }
 
-/* Tools */
 .site-header__tools {
   display: flex;
   align-items: center;
@@ -427,7 +426,6 @@ a:hover { color: var(--brand-dark); }
   width: 230px;
 }
 
-/* Mobile drawer containers (hidden by default) */
 .mobile-backdrop,
 .mobile-drawer { display: none; }
 
@@ -912,6 +910,8 @@ a:hover { color: var(--brand-dark); }
   border-radius: 13px;
   display: block;
 }
+
+/* ==================== Post Actions — Now at bottom ==================== */
 .post-actions {
   display: flex;
   flex-wrap: wrap;
@@ -919,6 +919,26 @@ a:hover { color: var(--brand-dark); }
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--border-soft);
+}
+
+/* Post actions moved to bottom of post */
+.post-actions--bottom {
+  margin-top: 36px;
+  margin-bottom: 36px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  justify-content: center;
+  animation: fadeUp .5s var(--ease-out) both;
+}
+
+.post-actions--bottom .btn {
+  padding: 12px 24px;
+  font-size: .92rem;
+  font-weight: 700;
 }
 
 /* ==================== Article ==================== */
@@ -1042,9 +1062,7 @@ a:hover { color: var(--brand-dark); }
   transition: all var(--t-fast);
   white-space: nowrap;
 }
-.preview-mode-toggle button:hover {
-  color: var(--brand);
-}
+.preview-mode-toggle button:hover { color: var(--brand); }
 .preview-mode-toggle button.is-active {
   background: linear-gradient(135deg, var(--brand), var(--brand-dark));
   color: #fff;
@@ -1957,7 +1975,20 @@ a:hover { color: var(--brand-dark); }
   .post-thumb img { border-radius: 10px; }
   .post-header { margin-bottom: 18px; padding-bottom: 14px; }
   .post-header h1 { font-size: 1.3rem; }
-  .post-actions { margin-bottom: 1rem; padding-bottom: 1rem; }
+
+  /* Post actions at bottom — stack on mobile */
+  .post-actions--bottom {
+    flex-direction: column;
+    padding: 20px 0;
+    margin-top: 28px;
+    margin-bottom: 28px;
+    gap: .5rem;
+  }
+  .post-actions--bottom .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+  }
 
   .article-content { font-size: .95rem; }
   .article-content h2 { font-size: 1.2rem; }
@@ -2012,7 +2043,8 @@ a:hover { color: var(--brand-dark); }
 /* ==================== Print ==================== */
 @media print {
   .site-header, .site-footer, .sidebar, .post-nav, .comment-section,
-  .ad-slot, .top-bar, .post-actions, .mobile-drawer, .mobile-backdrop { display: none !important; }
+  .ad-slot, .top-bar, .post-actions, .post-actions--bottom,
+  .mobile-drawer, .mobile-backdrop { display: none !important; }
   .home-layout { grid-template-columns: 1fr; }
   .article-content { font-size: 12pt; }
 }
