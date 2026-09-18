@@ -107,7 +107,7 @@ export default function Post() {
   };
 
   return (
-    <article>
+    <article className="post-page">
       <Seo
         title={post.seo_title || post.title}
         description={post.seo_description || post.description}
@@ -132,7 +132,7 @@ export default function Post() {
         </nav>
 
         <div className="home-layout">
-          <main>
+          <main className="home-main">
             <header className="post-header">
               <h1>{post.title}</h1>
               <div className="post-header__meta">
@@ -154,7 +154,7 @@ export default function Post() {
               </figure>
             )}
 
-            <div className="post-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', marginBottom: '1.5rem' }}>
+            <div className="post-actions">
               {post.live_preview && previewDoc && (
                 <button
                   type="button"
@@ -183,12 +183,13 @@ export default function Post() {
             />
 
             {images.length > 0 && (
-              <section style={{ margin: '2rem 0' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+              <section className="project-section">
+                <h2>Project Images</h2>
+                <div className="article-gallery__grid">
                   {images.map((img) => (
-                    <figure key={img.id} style={{ margin: 0 }}>
-                      <img src={img.image_url} alt={img.alt_text || ''} loading="lazy" style={{ borderRadius: '6px' }} />
-                      {img.caption && <figcaption style={{ fontSize: '.82rem', color: 'var(--text-muted)', marginTop: '.4rem' }}>{img.caption}</figcaption>}
+                    <figure key={img.id}>
+                      <img src={img.image_url} alt={img.alt_text || ''} loading="lazy" />
+                      {img.caption && <figcaption>{img.caption}</figcaption>}
                     </figure>
                   ))}
                 </div>
@@ -196,27 +197,27 @@ export default function Post() {
             )}
 
             {features.length > 0 && (
-              <section style={{ margin: '2rem 0' }}>
-                <h2>Features</h2>
-                <ul>
+              <section className="project-section">
+                <h2>Project Features</h2>
+                <ul className="feature-list">
                   {features.map((feature, i) => <li key={i}>{feature}</li>)}
                 </ul>
               </section>
             )}
 
             {technologies.length > 0 && (
-              <section style={{ margin: '2rem 0' }}>
+              <section className="project-section">
                 <h2>Technologies Used</h2>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
+                <ul className="tech-list">
                   {technologies.map((tech) => (
-                    <span key={tech} className="chip chip--tech">{tech}</span>
+                    <li key={tech} className="chip chip--tech">{tech}</li>
                   ))}
-                </div>
+                </ul>
               </section>
             )}
 
             {embedUrl && (
-              <section style={{ margin: '2rem 0' }}>
+              <section className="project-section">
                 <h2>Video Tutorial</h2>
                 <div className="video-frame">
                   <iframe
@@ -231,7 +232,7 @@ export default function Post() {
             )}
 
             {post.live_preview && previewDoc && (
-              <section id="live-preview" style={{ margin: '2rem 0' }}>
+              <section className="project-section" id="live-preview">
                 <h2>Live Preview</h2>
                 {showPreview ? (
                   <>
@@ -254,9 +255,9 @@ export default function Post() {
             )}
 
             {files.length > 0 && (
-              <section style={{ margin: '2rem 0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-                  <h2 style={{ margin: 0 }}>Source Code</h2>
+              <section className="project-section" id="source-code">
+                <div className="section-head-row">
+                  <h2>Source Code</h2>
                   <button type="button" className="btn btn--primary btn--sm" onClick={downloadProject}>
                     Download All Files
                   </button>
@@ -297,11 +298,9 @@ export default function Post() {
 
             {related.length > 0 && (
               <section className="related-section">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', borderBottom: '1px solid var(--border)', paddingBottom: '.6rem' }}>
+                <div className="related-head">
                   <span className="post-tags__label">Related Articles</span>
-                  <span style={{ fontSize: '.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-light)' }}>
-                    More from author
-                  </span>
+                  <span className="related-head__sub">More from author</span>
                 </div>
                 <div className="related-grid">
                   {related.slice(0, 3).map((item) => (
@@ -323,13 +322,11 @@ export default function Post() {
             )}
 
             <section className="comment-section">
-              <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', fontSize: '.9rem', letterSpacing: '.04em' }}>
-                Leave a Reply
-              </h3>
+              <h3 className="comment-section__title">Leave a Reply</h3>
               <form className="comment-form" onSubmit={(e) => e.preventDefault()}>
                 <div>
                   <label htmlFor="comment">Comment:</label>
-                  <textarea id="comment" placeholder="" />
+                  <textarea id="comment" />
                 </div>
                 <div>
                   <label htmlFor="name">Name:*</label>
