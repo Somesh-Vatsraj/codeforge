@@ -17,7 +17,6 @@ export async function handleAdmin(request, env) {
 
   /* ============ PUBLIC (no auth) ============ */
 
-  // नया endpoint — frontend को बताता है कि setup चाहिए या login
   if (path === '/setup-status' && method === 'GET') {
     const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM admins').first();
     return json({ needsSetup: (row?.n || 0) === 0 });
@@ -42,12 +41,14 @@ export async function handleAdmin(request, env) {
   if (path === '/stats' && method === 'GET') return stats(env);
   if (path === '/upload' && method === 'POST') return upload(request, env);
 
+  /* ---- settings ---- */
   if (path === '/settings') {
     if (method === 'GET') return getSettings(env);
     if (method === 'POST') return saveSettings(request, env);
     return fail('Method not allowed', 405);
   }
 
+  /* ---- categories ---- */
   if (path === '/categories' && method === 'GET') {
     const { results } = await env.DB.prepare(
       `SELECT c.*, (SELECT COUNT(*) FROM posts p WHERE p.category_id = c.id) AS post_count
@@ -63,6 +64,7 @@ export async function handleAdmin(request, env) {
     if (method === 'DELETE') return deleteCategory(env, id);
   }
 
+  /* ---- tags ---- */
   if (path === '/tags' && method === 'GET') {
     const { results } = await env.DB.prepare(
       `SELECT t.*, (SELECT COUNT(*) FROM post_tags pt WHERE pt.tag_id = t.id) AS post_count
@@ -78,6 +80,17 @@ export async function handleAdmin(request, env) {
     if (method === 'DELETE') return deleteTag(env, id);
   }
 
+  /* ---- comments ---- */
+  if (path === '/comments' && method === 'GET') return listAdminComments(request, env);
+  if (path === '/comments/stats' && method === 'GET') return commentsStats(env);
+  const commentMatch = path.match(/^\/comments\/(\d+)$/);
+  if (commentMatch) {
+    const id = intOr(commentMatch[1], 0);
+    if (method === 'PUT') return updateComment(request, env, id);
+    if (method === 'DELETE') return deleteCommentAdmin(env, id);
+  }
+
+  /* ---- posts ---- */
   if (path === '/posts' && method === 'GET') return listAdminPosts(request, env);
   if (path === '/posts' && method === 'POST') return savePost(request, env, null);
 
@@ -92,7 +105,7 @@ export async function handleAdmin(request, env) {
   return fail('Not found', 404);
 }
 
-/* ===================== setup / login ===================== */
+/* ===================== SETUP / LOGIN ===================== */
 
 async function setup(request, env) {
   const countRow = await env.DB.prepare('SELECT COUNT(*) AS n FROM admins').first();
@@ -126,7 +139,6 @@ async function login(request, env) {
     .prepare('SELECT * FROM admins WHERE username = ? OR email = ?')
     .bind(username, username).first();
 
-  // Constant-time-ish: पहले hash चलाओ चाहे admin mile या न मिले
   const salt = admin?.password_salt || b64urlEncode(crypto.getRandomValues(new Uint8Array(16)));
   const expected = admin?.password_hash || b64urlEncode(new Uint8Array(32));
   const ok = await verifyPassword(password, salt, expected);
@@ -161,10 +173,10 @@ async function changePassword(request, env, admin) {
   return json({ ok: true });
 }
 
-/* ===================== dashboard ===================== */
+/* ===================== DASHBOARD ===================== */
 
 async function stats(env) {
-  const [posts, published, drafts, views, categories, trending, recent] = await env.DB.batch([
+  const [posts, published, drafts, views, categories, trending, recent, pendingComments] = await env.DB.batch([
     env.DB.prepare('SELECT COUNT(*) AS n FROM posts'),
     env.DB.prepare("SELECT COUNT(*) AS n FROM posts WHERE status = 'published'"),
     env.DB.prepare("SELECT COUNT(*) AS n FROM posts WHERE status = 'draft'"),
@@ -175,6 +187,7 @@ async function stats(env) {
                            p.updated_at, c.name AS category_name
                     FROM posts p LEFT JOIN categories c ON c.id = p.category_id
                     ORDER BY p.updated_at DESC LIMIT 8`),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM comments WHERE status = 'pending'"),
   ]);
 
   return json({
@@ -185,12 +198,13 @@ async function stats(env) {
       views: views.results[0].n,
       categories: categories.results[0].n,
       trending: trending.results[0].n,
+      pendingComments: pendingComments.results[0].n,
     },
     recent: recent.results || [],
   });
 }
 
-/* ===================== upload ===================== */
+/* ===================== UPLOAD ===================== */
 
 async function upload(request, env) {
   const maxBytes = intOr(env.MAX_UPLOAD_BYTES, 350000);
@@ -220,7 +234,7 @@ async function upload(request, env) {
   return json({ url: `/api/uploads/${id}`, id, size: buffer.length });
 }
 
-/* ===================== settings ===================== */
+/* ===================== SETTINGS ===================== */
 
 async function getSettings(env) {
   const { results } = await env.DB.prepare('SELECT key, value FROM settings').all();
@@ -240,7 +254,7 @@ async function saveSettings(request, env) {
   return json({ ok: true });
 }
 
-/* ===================== categories ===================== */
+/* ===================== CATEGORIES ===================== */
 
 async function saveCategory(request, env, id) {
   const body = await request.json().catch(() => ({}));
@@ -269,7 +283,7 @@ async function deleteCategory(env, id) {
   return json({ ok: true });
 }
 
-/* ===================== tags ===================== */
+/* ===================== TAGS ===================== */
 
 async function saveTag(request, env, id) {
   const body = await request.json().catch(() => ({}));
@@ -295,7 +309,98 @@ async function deleteTag(env, id) {
   return json({ ok: true });
 }
 
-/* ===================== posts ===================== */
+/* ===================== COMMENTS ===================== */
+
+async function commentsStats(env) {
+  const [pending, approved, spam, total] = await env.DB.batch([
+    env.DB.prepare("SELECT COUNT(*) AS n FROM comments WHERE status = 'pending'"),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM comments WHERE status = 'approved'"),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM comments WHERE status = 'spam'"),
+    env.DB.prepare('SELECT COUNT(*) AS n FROM comments'),
+  ]);
+  return json({
+    pending: pending.results[0].n,
+    approved: approved.results[0].n,
+    spam: spam.results[0].n,
+    total: total.results[0].n,
+  });
+}
+
+async function listAdminComments(request, env) {
+  const url = new URL(request.url);
+  const page = clamp(intOr(url.searchParams.get('page'), 1), 1, 500);
+  const limit = 30;
+  const offset = (page - 1) * limit;
+  const status = url.searchParams.get('status');
+  const q = (url.searchParams.get('q') || '').trim();
+
+  const where = ['1=1'];
+  const binds = [];
+
+  if (status === 'pending' || status === 'approved' || status === 'spam') {
+    where.push('c.status = ?');
+    binds.push(status);
+  }
+  if (q) {
+    where.push('(c.author_name LIKE ? OR c.body LIKE ? OR p.title LIKE ?)');
+    binds.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const whereSql = where.join(' AND ');
+
+  const countRow = await env.DB
+    .prepare(`SELECT COUNT(*) AS total
+              FROM comments c
+              LEFT JOIN posts p ON p.id = c.post_id
+              WHERE ${whereSql}`)
+    .bind(...binds)
+    .first();
+
+  const { results } = await env.DB
+    .prepare(
+      `SELECT c.id, c.post_id, c.author_name, c.body, c.status, c.created_at,
+              p.title AS post_title, p.slug AS post_slug
+       FROM comments c
+       LEFT JOIN posts p ON p.id = c.post_id
+       WHERE ${whereSql}
+       ORDER BY
+         CASE c.status WHEN 'pending' THEN 0 ELSE 1 END,
+         c.created_at DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .bind(...binds, limit, offset)
+    .all();
+
+  const total = countRow?.total || 0;
+  return json({
+    comments: results || [],
+    total,
+    page,
+    pages: Math.ceil(total / limit) || 0,
+  });
+}
+
+async function updateComment(request, env, id) {
+  const body = await request.json().catch(() => ({}));
+  const status = String(body.status || '').trim();
+  if (!['pending', 'approved', 'spam'].includes(status)) {
+    return fail('Invalid status. Must be pending, approved, or spam.');
+  }
+  const row = await env.DB.prepare('SELECT id FROM comments WHERE id = ?').bind(id).first();
+  if (!row) return fail('Comment not found', 404);
+
+  await env.DB.prepare('UPDATE comments SET status = ? WHERE id = ?').bind(status, id).run();
+  return json({ ok: true });
+}
+
+async function deleteCommentAdmin(env, id) {
+  const row = await env.DB.prepare('SELECT id FROM comments WHERE id = ?').bind(id).first();
+  if (!row) return fail('Comment not found', 404);
+
+  await env.DB.prepare('DELETE FROM comments WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
+/* ===================== POSTS ===================== */
 
 async function listAdminPosts(request, env) {
   const url = new URL(request.url);
