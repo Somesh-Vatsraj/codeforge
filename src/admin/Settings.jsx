@@ -23,6 +23,7 @@ const GROUPS = [
       ['social_github', 'GitHub URL', 'url'],
       ['social_youtube', 'YouTube URL', 'url'],
       ['social_facebook', 'Facebook URL', 'url'],
+      ['social_instagram', 'Instagram URL', 'url'],
       ['youtube_channel', 'YouTube channel URL', 'url'],
     ],
   },
