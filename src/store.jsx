@@ -86,11 +86,11 @@ export function useAuth() {
 const SettingsContext = createContext(null);
 
 const FALLBACK = {
-  site_name: 'CodeForge',
-  site_description: 'Hands-on coding tutorials and free source-code projects.',
-  logo_url: '',
+  site_name: 'Vatsraj Tech',
+  site_description: 'Hands-on coding tutorials and free source-code projects for web developers.',
+  logo_url: '/logo.svg',
   favicon_url: '/favicon.svg',
-  author_name: 'Editorial Team',
+  author_name: 'Vatsraj Tech Team',
   contact_email: 'hello@example.com',
   footer_text: '',
   ads_enabled: '0',
