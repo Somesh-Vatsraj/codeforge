@@ -76,30 +76,79 @@ export default function Header() {
         </div>
       )}
 
+ <style>{`
+        .brand {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+          color: inherit;
+          transition: opacity 0.2s ease;
+        }
+        .brand:hover { opacity: 0.85; }
+
+        .brand__logo {
+          display: block;
+          height: 52px;
+          width: auto;
+          max-width: 220px;
+          object-fit: contain;
+        }
+        .brand__logo--large { height: 52px; }
+
+        .brand__mark {
+          width: 36px;
+          height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          color: #fff;
+          font-weight: 700;
+          font-size: 14px;
+          flex-shrink: 0;
+        }
+
+        .brand__name {
+          font-weight: 700;
+          font-size: 18px;
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 640px) {
+          .brand__logo,
+          .brand__logo--large {
+            height: 40px;
+            max-width: 160px;
+          }
+          .brand__name { font-size: 16px; }
+        }
+      `}</style>
+
+      
       {/* ==================== HEADER ==================== */}
       <header className="site-header">
         <div className="container site-header__inner">
 
           {/* Brand */}
-        <Link className="brand" to="/" onClick={closeMenu}>
-  {settings.logo_url ? (
-    <img
-      src={settings.logo_url}
-      alt={settings.site_name}
-      className="brand__logo"
-      width={160}
-      height={40}
-      loading="eager"
-      onError={(e) => {
-        e.currentTarget.style.display = "none";
-        e.currentTarget.nextElementSibling?.classList.add("brand__mark--show");
-      }}
-    />
-  ) : null}
-
-  <span className="brand__mark" aria-hidden="true">{"</>"}</span>
-  <span className="brand__name">{settings.site_name}</span>
-</Link>
+      <Link className="brand" to="/" onClick={closeMenu}>
+        {settings.logo_url ? (
+          <img
+            src={settings.logo_url}
+            alt={settings.site_name}
+            className="brand__logo brand__logo--large"
+            height={52}
+          />
+        ) : (
+          <>
+            <span className="brand__mark" aria-hidden="true">{"</>"}</span>
+            <span className="brand__name">{settings.site_name}</span>
+          </>
+        )}
+      </Link>
+          
           {/* Desktop navigation */}
           <nav className="main-nav" aria-label="Main navigation">
             <NavLink to="/" end>Home</NavLink>
