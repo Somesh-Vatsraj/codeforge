@@ -46,6 +46,7 @@ export default function Post() {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [previewMode, setPreviewMode] = useState('desktop'); // 'desktop' | 'mobile'
 
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -87,21 +88,14 @@ export default function Post() {
   }, [post]);
 
   const previewDoc = useMemo(
-    () => (post?.live_preview ? buildPreviewDocument(post.demo_files) : null),
-    [post],
+    () => (post?.live_preview ? buildPreviewDocument(post.demo_files, previewMode) : null),
+    [post, previewMode],
   );
 
   const downloadProject = () => {
     if (!post) return;
     const blob = buildProjectZip(post);
     downloadBlob(blob, `${slugify(post.slug || post.title) || 'project'}.zip`);
-  };
-
-  const scrollToPreview = () => {
-    setShowPreview(true);
-    setTimeout(() => {
-      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
   };
 
   const submitComment = async (event) => {
@@ -171,10 +165,6 @@ export default function Post() {
   const images = asArray(post.images);
   const files = asArray(post.files);
 
-  const hasActions = Boolean(
-    (post.live_preview && previewDoc) || true || watchUrl,
-  );
-
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -240,7 +230,29 @@ export default function Post() {
                 </figure>
               )}
 
-              {/* ==================== ARTICLE ==================== */}
+              <div className="post-actions">
+                {post.live_preview && previewDoc && (
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={() => {
+                      setShowPreview(true);
+                      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    ▶ Live Preview
+                  </button>
+                )}
+                <button type="button" className="btn btn--ghost" onClick={downloadProject}>
+                  ⬇ Download Project
+                </button>
+                {watchUrl && (
+                  <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
+                    Watch on YouTube
+                  </a>
+                )}
+              </div>
+
               <div
                 className="article-content"
                 dangerouslySetInnerHTML={{ __html: post.article_content || '' }}
@@ -297,17 +309,46 @@ export default function Post() {
 
               {post.live_preview && previewDoc && (
                 <section className="project-section" id="live-preview">
-                  <h2>Live Preview</h2>
+                  <div className="section-head-row">
+                    <h2>Live Preview</h2>
+                    <div className="preview-mode-toggle" role="group" aria-label="Preview viewport">
+                      <button
+                        type="button"
+                        className={previewMode === 'desktop' ? 'is-active' : ''}
+                        onClick={() => {
+                          setPreviewMode('desktop');
+                          setShowPreview(true);
+                        }}
+                      >
+                        💻 Desktop
+                      </button>
+                      <button
+                        type="button"
+                        className={previewMode === 'mobile' ? 'is-active' : ''}
+                        onClick={() => {
+                          setPreviewMode('mobile');
+                          setShowPreview(true);
+                        }}
+                      >
+                        📱 Mobile
+                      </button>
+                    </div>
+                  </div>
+
                   {showPreview ? (
                     <>
                       <p className="muted small">
                         Sandboxed preview — no access to real cookies or admin data.
+                        {previewMode === 'desktop'
+                          ? ' Rendered at 1024px. Swipe horizontally inside the frame to scroll.'
+                          : ' Rendered at device width.'}
                       </p>
-                      <div className="preview-frame">
+                      <div className={`preview-frame preview-frame--${previewMode}`}>
                         <iframe
+                          key={previewMode}
                           title={`${post.title} live preview`}
                           srcDoc={previewDoc}
-                          sandbox="allow-scripts allow-modals allow-popups allow-forms"
+                          sandbox="allow-scripts allow-modals allow-popups"
                           loading="lazy"
                         />
                       </div>
@@ -387,39 +428,6 @@ export default function Post() {
                 </section>
               )}
 
-              {/* ==================== ACTION BUTTONS (BOTTOM) ==================== */}
-              {hasActions && (
-                <div className="post-actions post-actions--bottom">
-                  {post.live_preview && previewDoc && (
-                    <button
-                      type="button"
-                      className="btn btn--primary"
-                      onClick={scrollToPreview}
-                    >
-                      ▶ Live Preview
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={downloadProject}
-                  >
-                    ⬇ Download Project
-                  </button>
-                  {watchUrl && (
-                    <a
-                      className="btn btn--ghost"
-                      href={watchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      ▶ Watch on YouTube
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {/* ==================== COMMENTS ==================== */}
               <section className="comment-section">
                 {comments.length > 0 && (
                   <>
