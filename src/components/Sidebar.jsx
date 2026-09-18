@@ -34,6 +34,18 @@ function YouTubeIcon() {
 }
 
 /* ────────────────────────────────────────────────────────────
+   Helper — only accept real, configured URLs
+   ──────────────────────────────────────────────────────────── */
+function normalizeUrl(url) {
+  if (!url) return '';
+  const u = String(url).trim();
+  if (!u) return '';
+  if (/^#/.test(u)) return '';
+  if (!/^https?:\/\//i.test(u)) return '';
+  return u;
+}
+
+/* ────────────────────────────────────────────────────────────
    Sidebar
    ──────────────────────────────────────────────────────────── */
 export default function Sidebar({ showFeatured = true }) {
@@ -64,6 +76,34 @@ export default function Sidebar({ showFeatured = true }) {
 
     return () => { cancelled = true; };
   }, []);
+
+  // Only show socials that have a real configured URL
+  const socials = [
+    {
+      key: 'facebook',
+      name: 'Facebook',
+      url: normalizeUrl(settings.social_facebook),
+      count: settings.social_facebook_count || '4,000 Fans',
+      className: 'follow-btn--fb',
+      Icon: FacebookIcon,
+    },
+    {
+      key: 'instagram',
+      name: 'Instagram',
+      url: normalizeUrl(settings.social_instagram),
+      count: settings.social_instagram_count || '30,000 Followers',
+      className: 'follow-btn--ig',
+      Icon: InstagramIcon,
+    },
+    {
+      key: 'youtube',
+      name: 'YouTube',
+      url: normalizeUrl(settings.social_youtube || settings.youtube_channel),
+      count: settings.social_youtube_count || '200,000 Subs',
+      className: 'follow-btn--yt',
+      Icon: YouTubeIcon,
+    },
+  ].filter((s) => s.url);
 
   return (
     <aside className="sidebar">
@@ -99,42 +139,35 @@ export default function Sidebar({ showFeatured = true }) {
         </div>
       )}
 
+      {/* ==================== Follow Us ==================== */}
       <div className="widget">
         <h3 className="widget__title">Follow Us</h3>
-        <div className="follow-grid">
-          <a
-            className="follow-btn follow-btn--fb"
-            href={settings.social_facebook || 'https://www.facebook.com'}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Follow on Facebook"
-          >
-            <span className="follow-btn__icon"><FacebookIcon /></span>
-            <span className="follow-btn__count">4,000 Fans</span>
-          </a>
 
-          <a
-            className="follow-btn follow-btn--ig"
-            href={settings.social_instagram || 'https://www.instagram.com'}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Follow on Instagram"
+        {socials.length > 0 ? (
+          <div
+            className="follow-grid"
+            style={{ gridTemplateColumns: `repeat(${Math.min(socials.length, 3)}, 1fr)` }}
           >
-            <span className="follow-btn__icon"><InstagramIcon /></span>
-            <span className="follow-btn__count">30,000 Followers</span>
-          </a>
-
-          <a
-            className="follow-btn follow-btn--yt"
-            href={settings.social_youtube || 'https://www.youtube.com'}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Subscribe on YouTube"
-          >
-            <span className="follow-btn__icon"><YouTubeIcon /></span>
-            <span className="follow-btn__count">200,000 Subs</span>
-          </a>
-        </div>
+            {socials.map(({ key, name, url, count, className, Icon }) => (
+              <a
+                key={key}
+                className={`follow-btn ${className}`}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Follow on ${name}`}
+                title={name}
+              >
+                <span className="follow-btn__icon"><Icon /></span>
+                <span className="follow-btn__count">{count}</span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="muted small">
+            No social links configured yet. Add them in Admin → Settings → Social links.
+          </p>
+        )}
       </div>
 
       {popular.length > 0 && (
