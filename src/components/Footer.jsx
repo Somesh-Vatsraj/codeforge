@@ -48,7 +48,6 @@ function normalizeUrl(url) {
   if (!url) return '';
   const u = String(url).trim();
   if (!u) return '';
-  // Skip placeholder values that admins may accidentally save
   if (/^#/.test(u)) return '';
   if (!/^https?:\/\//i.test(u)) return '';
   return u;
@@ -58,7 +57,7 @@ export default function Footer() {
   const { settings } = useSettings();
   const year = new Date().getFullYear();
 
-  // Only include socials that have a real, configured URL
+  // Instagram always visible; others only if configured
   const socials = [
     {
       name: 'Facebook',
@@ -67,8 +66,9 @@ export default function Footer() {
     },
     {
       name: 'Instagram',
-      url: normalizeUrl(settings.social_instagram),
+      url: normalizeUrl(settings.social_instagram) || 'https://www.instagram.com',
       Icon: Icons.Instagram,
+      always: true,
     },
     {
       name: 'YouTube',
@@ -85,16 +85,15 @@ export default function Footer() {
       url: normalizeUrl(settings.social_github),
       Icon: Icons.GitHub,
     },
-  ].filter((s) => s.url);
+  ].filter((s) => s.always || s.url);
 
-  // If no socials configured, drop the middle column so the grid stays balanced
   const hasSocials = socials.length > 0;
 
   return (
     <footer className="site-footer">
       <div className="container">
         <div className={`site-footer__grid ${hasSocials ? '' : 'site-footer__grid--no-socials'}`}>
-          {/* ==================== Column 1 — Brand + About ==================== */}
+          {/* Column 1 — Brand + About */}
           <div className="site-footer__col site-footer__col--about">
             <Link to="/" className="site-footer__brand">
               {settings.logo_url ? (
@@ -120,7 +119,7 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* ==================== Column 2 — Follow Us (only if configured) ==================== */}
+          {/* Column 2 — Follow Us */}
           {hasSocials && (
             <div className="site-footer__col">
               <h3>Follow Us</h3>
@@ -142,7 +141,7 @@ export default function Footer() {
             </div>
           )}
 
-          {/* ==================== Column 3 — Quick links ==================== */}
+          {/* Column 3 — Quick links */}
           <div className="site-footer__col">
             <h3>Quick Links</h3>
             <ul className="site-footer__links">
@@ -155,7 +154,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ==================== Bottom row ==================== */}
+        {/* Bottom row */}
         <div className="site-footer__bottom">
           <p>
             Copyright © {year} <strong>{settings.site_name || 'CodeForge'}</strong>. All Rights Reserved.
