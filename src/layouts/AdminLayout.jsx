@@ -26,6 +26,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/dashboard">Dashboard</NavLink>
           <NavLink to="/admin/posts" end>All Posts</NavLink>
           <NavLink to="/admin/posts/create">Create Post</NavLink>
+          <NavLink to="/admin/comments">Comments</NavLink>
           <NavLink to="/admin/categories">Categories &amp; Tags</NavLink>
           <NavLink to="/admin/settings">Settings</NavLink>
         </nav>
