@@ -97,6 +97,13 @@ export default function Post() {
     downloadBlob(blob, `${slugify(post.slug || post.title) || 'project'}.zip`);
   };
 
+  const scrollToPreview = () => {
+    setShowPreview(true);
+    setTimeout(() => {
+      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
   const submitComment = async (event) => {
     event.preventDefault();
     if (!post) return;
@@ -164,6 +171,10 @@ export default function Post() {
   const images = asArray(post.images);
   const files = asArray(post.files);
 
+  const hasActions = Boolean(
+    (post.live_preview && previewDoc) || true || watchUrl,
+  );
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -229,29 +240,7 @@ export default function Post() {
                 </figure>
               )}
 
-              <div className="post-actions">
-                {post.live_preview && previewDoc && (
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={() => {
-                      setShowPreview(true);
-                      document.getElementById('live-preview')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    ▶ Live Preview
-                  </button>
-                )}
-                <button type="button" className="btn btn--ghost" onClick={downloadProject}>
-                  ⬇ Download Project
-                </button>
-                {watchUrl && (
-                  <a className="btn btn--ghost" href={watchUrl} target="_blank" rel="noopener noreferrer">
-                    Watch on YouTube
-                  </a>
-                )}
-              </div>
-
+              {/* ==================== ARTICLE ==================== */}
               <div
                 className="article-content"
                 dangerouslySetInnerHTML={{ __html: post.article_content || '' }}
@@ -311,12 +300,14 @@ export default function Post() {
                   <h2>Live Preview</h2>
                   {showPreview ? (
                     <>
-                      <p className="muted small">Sandboxed preview — no access to cookies or admin data.</p>
+                      <p className="muted small">
+                        Sandboxed preview — no access to real cookies or admin data.
+                      </p>
                       <div className="preview-frame">
                         <iframe
                           title={`${post.title} live preview`}
                           srcDoc={previewDoc}
-                          sandbox="allow-scripts allow-modals allow-popups"
+                          sandbox="allow-scripts allow-modals allow-popups allow-forms"
                           loading="lazy"
                         />
                       </div>
@@ -396,6 +387,39 @@ export default function Post() {
                 </section>
               )}
 
+              {/* ==================== ACTION BUTTONS (BOTTOM) ==================== */}
+              {hasActions && (
+                <div className="post-actions post-actions--bottom">
+                  {post.live_preview && previewDoc && (
+                    <button
+                      type="button"
+                      className="btn btn--primary"
+                      onClick={scrollToPreview}
+                    >
+                      ▶ Live Preview
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={downloadProject}
+                  >
+                    ⬇ Download Project
+                  </button>
+                  {watchUrl && (
+                    <a
+                      className="btn btn--ghost"
+                      href={watchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      ▶ Watch on YouTube
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* ==================== COMMENTS ==================== */}
               <section className="comment-section">
                 {comments.length > 0 && (
                   <>
