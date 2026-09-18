@@ -13,6 +13,7 @@ import Login from './admin/Login.jsx';
 import Dashboard from './admin/Dashboard.jsx';
 import Posts from './admin/Posts.jsx';
 import PostForm from './admin/PostForm.jsx';
+import Comments from './admin/Comments.jsx';
 import Categories from './admin/Categories.jsx';
 import Settings from './admin/Settings.jsx';
 
@@ -40,7 +41,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
 
-      {/* ---------- admin (separate, never linked from public nav) ---------- */}
+      {/* ---------- admin ---------- */}
       <Route path="/admin/login" element={<Login />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="posts" element={<Posts />} />
         <Route path="posts/create" element={<PostForm />} />
         <Route path="posts/edit/:id" element={<PostForm />} />
+        <Route path="comments" element={<Comments />} />
         <Route path="categories" element={<Categories />} />
         <Route path="settings" element={<Settings />} />
       </Route>
