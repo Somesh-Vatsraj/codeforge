@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api, qs } from '../api/client.js';
 import PostCard from '../components/PostCard.jsx';
 import Sidebar from '../components/Sidebar.jsx';
@@ -10,12 +10,21 @@ import EmptyState from '../components/EmptyState.jsx';
 import Pagination from '../components/Pagination.jsx';
 
 export default function Home() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
+  const [featured, setFeatured] = useState([]);
   const [data, setData] = useState({ posts: [], page: 1, pages: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get(`/posts${qs({ featured: 1, limit: 4 })}`)
+      .then((r) => { if (!cancelled) setFeatured(r.posts || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,8 +40,36 @@ export default function Home() {
     <div className="container">
       <Seo />
 
+      {featured.length > 0 && (
+        <section className="featured-hero">
+          <div className="featured-hero__grid">
+            {featured.slice(0, 4).map((post, idx) => (
+              <article
+                key={post.id}
+                className={idx === 0 ? 'featured-hero__card featured-hero__card--large' : 'featured-hero__card'}
+              >
+                <Link to={`/project/${post.slug}`} className="featured-hero__link">
+                  <div className="featured-hero__media">
+                    {post.thumbnail_url ? (
+                      <img src={post.thumbnail_url} alt="" loading={idx === 0 ? 'eager' : 'lazy'} />
+                    ) : (
+                      <span className="post-card__placeholder">{"</>"}</span>
+                    )}
+                  </div>
+                  <div className="featured-hero__overlay">
+                    <h2 className="featured-hero__title">{post.title}</h2>
+                  </div>
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="home-layout">
         <main>
+          <h2 className="section-title">Recent Posts</h2>
+
           {error && <p className="alert alert--error">{error}</p>}
           {loading && <Spinner label="Loading posts…" />}
 
