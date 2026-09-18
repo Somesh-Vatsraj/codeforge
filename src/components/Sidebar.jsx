@@ -140,10 +140,10 @@ export default function Sidebar({ showFeatured = true }) {
       )}
 
       {/* ==================== Follow Us ==================== */}
-      <div className="widget">
-        <h3 className="widget__title">Follow Us</h3>
-
-        {socials.length > 0 ? (
+      {/* Widget completely hidden if no socials are configured */}
+      {socials.length > 0 && (
+        <div className="widget">
+          <h3 className="widget__title">Follow Us</h3>
           <div
             className="follow-grid"
             style={{ gridTemplateColumns: `repeat(${Math.min(socials.length, 3)}, 1fr)` }}
@@ -163,12 +163,8 @@ export default function Sidebar({ showFeatured = true }) {
               </a>
             ))}
           </div>
-        ) : (
-          <p className="muted small">
-            No social links configured yet. Add them in Admin → Settings → Social links.
-          </p>
-        )}
-      </div>
+        </div>
+      )}
 
       {popular.length > 0 && (
         <div className="widget">
