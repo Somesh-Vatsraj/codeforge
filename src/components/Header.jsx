@@ -13,20 +13,32 @@ export default function Header() {
   const [query, setQuery] = useState('');
   const [categories, setCategories] = useState([]);
 
+  /* ---------- load categories ---------- */
   useEffect(() => {
-    api.get('/categories').then((d) => setCategories(d.categories || [])).catch(() => {});
+    api.get('/categories')
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => {});
   }, []);
 
+  /* ---------- lock body scroll when drawer open ---------- */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
+  /* ---------- close drawer on ESC ---------- */
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  /* ---------- close drawer on route change ---------- */
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [navigate]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -39,19 +51,33 @@ export default function Header() {
     setQuery('');
   };
 
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
-  const htmlCssCats = categories.filter((c) => c.slug === 'html' || c.slug === 'css');
+  const htmlCssCats = categories.filter(
+    (c) => c.slug === 'html' || c.slug === 'css',
+  );
   const jsCats = categories.filter(
-    (c) => c.slug.includes('javascript') || c.slug === 'js' || c.slug === 'react',
+    (c) =>
+      c.slug.includes('javascript') ||
+      c.slug === 'js' ||
+      c.slug === 'react',
   );
 
   return (
     <>
+      {/* ==================== TOP BAR ==================== */}
       {showTopBar && (
         <div className="top-bar">
           <span>Impressed by our work? Hire us for exceptional web development services.</span>
-          <a href="https://www.fiverr.com" target="_blank" rel="noopener noreferrer">Hire us</a>
+          <a
+            href="https://www.fiverr.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Hire us
+          </a>
           <button
             type="button"
             className="top-bar__close"
@@ -63,22 +89,39 @@ export default function Header() {
         </div>
       )}
 
+      {/* ==================== HEADER ==================== */}
       <header className="site-header">
         <div className="container site-header__inner">
+
+          {/* ---------- Brand ---------- */}
           <Link className="brand" to="/" onClick={closeMenu}>
             {settings.logo_url ? (
-              <img src={settings.logo_url} alt={settings.site_name} className="brand__logo" />
+              <img
+                src={settings.logo_url}
+                alt={settings.site_name}
+                className="brand__logo"
+              />
             ) : (
               <span className="brand__mark" aria-hidden="true">{"</>"}</span>
             )}
             <span className="brand__name">{settings.site_name}</span>
           </Link>
 
+          {/* ---------- Backdrop (mobile drawer) ---------- */}
           {menuOpen && (
-            <div className="nav-backdrop" onClick={closeMenu} aria-hidden="true" />
+            <div
+              className="nav-backdrop"
+              onClick={closeMenu}
+              aria-hidden="true"
+            />
           )}
 
-          <nav className={`main-nav ${menuOpen ? 'main-nav--open' : ''}`} aria-label="Main navigation">
+          {/* ---------- Main Nav / Drawer ---------- */}
+          <nav
+            className={`main-nav ${menuOpen ? 'main-nav--open' : ''}`}
+            aria-label="Main navigation"
+          >
+            {/* Drawer header — only visible on mobile */}
             <div className="main-nav__head">
               <span className="main-nav__title">Menu</span>
               <button
@@ -91,11 +134,20 @@ export default function Header() {
               </button>
             </div>
 
-            <NavLink to="/" end onClick={closeMenu}>Home</NavLink>
-            <NavLink to="/latest" onClick={closeMenu}>Blog</NavLink>
+            <NavLink to="/" end onClick={closeMenu}>
+              Home
+            </NavLink>
+
+            <NavLink to="/blog" onClick={closeMenu}>
+              Blog
+            </NavLink>
 
             <div className="nav-dropdown">
-              <button type="button" className="nav-dropdown__trigger" aria-haspopup="true">
+              <button
+                type="button"
+                className="nav-dropdown__trigger"
+                aria-haspopup="true"
+              >
                 <span>HTML &amp; CSS</span>
                 <span className="nav-dropdown__chev" aria-hidden="true">▾</span>
               </button>
@@ -103,17 +155,30 @@ export default function Header() {
                 {htmlCssCats.length > 0 ? (
                   htmlCssCats.map((c) => (
                     <li key={c.id}>
-                      <Link to={`/category/${c.slug}`} onClick={closeMenu}>{c.name}</Link>
+                      <Link
+                        to={`/category/${c.slug}`}
+                        onClick={closeMenu}
+                      >
+                        {c.name}
+                      </Link>
                     </li>
                   ))
                 ) : (
-                  <li><Link to="/latest" onClick={closeMenu}>All tutorials</Link></li>
+                  <li>
+                    <Link to="/blog" onClick={closeMenu}>
+                      All tutorials
+                    </Link>
+                  </li>
                 )}
               </ul>
             </div>
 
             <div className="nav-dropdown">
-              <button type="button" className="nav-dropdown__trigger" aria-haspopup="true">
+              <button
+                type="button"
+                className="nav-dropdown__trigger"
+                aria-haspopup="true"
+              >
                 <span>JavaScript</span>
                 <span className="nav-dropdown__chev" aria-hidden="true">▾</span>
               </button>
@@ -121,19 +186,38 @@ export default function Header() {
                 {jsCats.length > 0 ? (
                   jsCats.map((c) => (
                     <li key={c.id}>
-                      <Link to={`/category/${c.slug}`} onClick={closeMenu}>{c.name}</Link>
+                      <Link
+                        to={`/category/${c.slug}`}
+                        onClick={closeMenu}
+                      >
+                        {c.name}
+                      </Link>
                     </li>
                   ))
                 ) : (
-                  <li><Link to="/latest" onClick={closeMenu}>All tutorials</Link></li>
+                  <li>
+                    <Link to="/blog" onClick={closeMenu}>
+                      All tutorials
+                    </Link>
+                  </li>
                 )}
               </ul>
             </div>
 
-            <NavLink to="/trending" onClick={closeMenu}>Trending</NavLink>
-            <NavLink to="/contact" onClick={closeMenu}>Contact Us</NavLink>
+            <NavLink to="/trending" onClick={closeMenu}>
+              Trending
+            </NavLink>
 
-            <form className="search-form search-form--mobile" onSubmit={submitSearch} role="search">
+            <NavLink to="/contact" onClick={closeMenu}>
+              Contact Us
+            </NavLink>
+
+            {/* Mobile-only search inside drawer */}
+            <form
+              className="search-form search-form--mobile"
+              onSubmit={submitSearch}
+              role="search"
+            >
               <input
                 type="search"
                 value={query}
@@ -141,12 +225,20 @@ export default function Header() {
                 placeholder="Search tutorials…"
                 aria-label="Search tutorials"
               />
-              <button type="submit" className="btn btn--primary btn--sm">Search</button>
+              <button type="submit" className="btn btn--primary btn--sm">
+                Search
+              </button>
             </form>
           </nav>
 
+          {/* ---------- Header tools (right side) ---------- */}
           <div className="site-header__tools">
-            <form className="search-form search-form--desktop" onSubmit={submitSearch} role="search">
+            {/* Desktop-only search input */}
+            <form
+              className="search-form search-form--desktop"
+              onSubmit={submitSearch}
+              role="search"
+            >
               <input
                 type="search"
                 value={query}
@@ -156,16 +248,18 @@ export default function Header() {
               />
             </form>
 
+            {/* Theme toggle */}
             <button
               type="button"
               className="icon-btn"
               onClick={toggleTheme}
               aria-label="Toggle dark mode"
-              title="Toggle theme"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? '☀' : '🌙'}
             </button>
 
+            {/* Hamburger / Close — mobile only */}
             <button
               type="button"
               className="icon-btn menu-toggle"
@@ -176,6 +270,7 @@ export default function Header() {
               {menuOpen ? '✕' : '☰'}
             </button>
           </div>
+
         </div>
       </header>
     </>
