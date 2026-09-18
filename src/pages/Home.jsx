@@ -48,7 +48,7 @@ export default function Home() {
                 key={post.id}
                 className={idx === 0 ? 'featured-hero__card featured-hero__card--large' : 'featured-hero__card'}
               >
-                <Link to={`/project/${post.slug}`} className="featured-hero__link">
+                <Link className="featured-hero__link" to={`/project/${post.slug}`}>
                   <div className="featured-hero__media">
                     {post.thumbnail_url ? (
                       <img src={post.thumbnail_url} alt="" loading={idx === 0 ? 'eager' : 'lazy'} />
@@ -67,7 +67,7 @@ export default function Home() {
       )}
 
       <div className="home-layout">
-        <main>
+        <main className="home-main">
           <h2 className="section-title">Recent Posts</h2>
 
           {error && <p className="alert alert--error">{error}</p>}
